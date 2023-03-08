@@ -27,6 +27,7 @@ add_library(core STATIC
     DSi_SPI_TSC.cpp
     FATStorage.cpp
     FIFO.h
+    FileSaveState.cpp
     GBACart.cpp
     GPU.cpp
     GPU2D.cpp
