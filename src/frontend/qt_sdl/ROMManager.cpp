@@ -29,6 +29,7 @@
 #include "Config.h"
 #include "Platform.h"
 
+#include "FileSaveState.h"
 #include "NDS.h"
 #include "DSi.h"
 #include "SPI.h"
@@ -291,19 +292,19 @@ bool SavestateExists(int slot)
 bool LoadState(std::string filename)
 {
     // backup
-    Savestate* backup = new Savestate("timewarp.mln", true);
+    Savestate* backup = new FileSavestate("timewarp.mln", true);
     NDS::DoSavestate(backup);
     delete backup;
 
     bool failed = false;
 
-    Savestate* state = new Savestate(filename, false);
+    Savestate* state = new FileSavestate(filename, false);
     if (state->Error)
     {
         delete state;
 
         // current state might be crapoed, so restore from sane backup
-        state = new Savestate("timewarp.mln", false);
+        state = new FileSavestate("timewarp.mln", false);
         failed = true;
     }
 
@@ -313,7 +314,7 @@ bool LoadState(std::string filename)
     if (!res)
     {
         failed = true;
-        state = new Savestate("timewarp.mln", false);
+        state = new FileSavestate("timewarp.mln", false);
         NDS::DoSavestate(state);
         delete state;
     }
@@ -337,7 +338,7 @@ bool LoadState(std::string filename)
 
 bool SaveState(std::string filename)
 {
-    Savestate* state = new Savestate(filename, true);
+    Savestate* state = new FileSavestate(filename, true);
     if (state->Error)
     {
         delete state;
@@ -365,7 +366,7 @@ void UndoStateLoad()
     // pray that this works
     // what do we do if it doesn't???
     // but it should work.
-    Savestate* backup = new Savestate("timewarp.mln", false);
+    Savestate* backup = new FileSavestate("timewarp.mln", false);
     NDS::DoSavestate(backup);
     delete backup;
 

@@ -1,5 +1,5 @@
 /*
-    Copyright 2016-2022 melonDS team
+    Copyright 2016-2023 melonDS team
 
     This file is part of melonDS.
 
@@ -16,20 +16,20 @@
     with melonDS. If not, see http://www.gnu.org/licenses/.
 */
 
-#ifndef SAVESTATE_H
-#define SAVESTATE_H
+#ifndef FILESAVESTATE_H
+#define FILESAVESTATE_H
 
 #include <string>
 #include <stdio.h>
 #include "types.h"
 
-#define SAVESTATE_MAJOR 10
-#define SAVESTATE_MINOR 0
+#include "Savestate.h"
 
-class Savestate
+class FileSavestate : public Savestate
 {
 public:
-    virtual ~Savestate();
+    FileSavestate(std::string filename, bool save);
+    ~FileSavestate();
 
     bool Error;
 
@@ -39,16 +39,16 @@ public:
 
     u32 CurSection;
 
-    virtual void Section(const char* magic) = 0;
+    void Section(const char* magic);
 
-    virtual void Var8(u8* var) = 0;
-    virtual void Var16(u16* var) = 0;
-    virtual void Var32(u32* var) = 0;
-    virtual void Var64(u64* var) = 0;
+    void Var8(u8* var);
+    void Var16(u16* var);
+    void Var32(u32* var);
+    void Var64(u64* var);
 
     void Bool32(bool* var);
 
-    virtual void VarArray(void* data, u32 len) = 0;
+    void VarArray(void* data, u32 len);
 
     bool IsAtleastVersion(u32 major, u32 minor)
     {
@@ -56,6 +56,9 @@ public:
         if (VersionMajor == major && VersionMinor >= minor) return true;
         return false;
     }
+
+private:
+    FILE* file;
 };
 
-#endif // SAVESTATE_H
+#endif // FILESAVESTATE_H
