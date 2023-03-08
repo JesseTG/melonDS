@@ -25,37 +25,20 @@
 
 #include "Savestate.h"
 
-class FileSavestate : public Savestate
+class FileSavestate final : public Savestate
 {
 public:
     FileSavestate(std::string filename, bool save);
-    ~FileSavestate();
+    ~FileSavestate() final;
 
-    bool Error;
+    void Section(const char* magic) final;
 
-    bool Saving;
-    u32 VersionMajor;
-    u32 VersionMinor;
+    void Var8(u8* var) final;
+    void Var16(u16* var) final;
+    void Var32(u32* var) final;
+    void Var64(u64* var) final;
 
-    u32 CurSection;
-
-    void Section(const char* magic);
-
-    void Var8(u8* var);
-    void Var16(u16* var);
-    void Var32(u32* var);
-    void Var64(u64* var);
-
-    void Bool32(bool* var);
-
-    void VarArray(void* data, u32 len);
-
-    bool IsAtleastVersion(u32 major, u32 minor)
-    {
-        if (VersionMajor > major) return true;
-        if (VersionMajor == major && VersionMinor >= minor) return true;
-        return false;
-    }
+    void VarArray(void* data, u32 len) final;
 
 private:
     FILE* file;
