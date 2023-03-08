@@ -264,22 +264,6 @@ void FileSavestate::Var64(u64* var)
     }
 }
 
-void FileSavestate::Bool32(bool* var)
-{
-    // for compability
-    if (Saving)
-    {
-        u32 val = *var;
-        Var32(&val);
-    }
-    else
-    {
-        u32 val;
-        Var32(&val);
-        *var = val != 0;
-    }
-}
-
 void FileSavestate::VarArray(void* data, u32 len)
 {
     if (Error) return;
