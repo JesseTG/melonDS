@@ -16,7 +16,7 @@
     with melonDS. If not, see http://www.gnu.org/licenses/.
 */
 
-#include "FileSaveState.h"
+#include "FileSavestate.h"
 
 
 #include <stdio.h>

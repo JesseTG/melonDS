@@ -29,7 +29,7 @@
 #include "Config.h"
 #include "Platform.h"
 
-#include "FileSaveState.h"
+#include "FileSavestate.h"
 #include "NDS.h"
 #include "DSi.h"
 #include "SPI.h"
