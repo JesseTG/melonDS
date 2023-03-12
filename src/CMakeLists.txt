@@ -25,6 +25,7 @@ add_library(core STATIC
     DSi_NWifi.cpp
     DSi_SD.cpp
     DSi_SPI_TSC.cpp
+    ExternalBufferSavestate.cpp
     FATStorage.cpp
     FIFO.h
     FileSavestate.cpp
