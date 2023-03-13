@@ -47,6 +47,7 @@ public:
     [[nodiscard]] const u8* Buffer() const { return _buffer; }
     void SetBuffer(u8* new_buffer, size_t buffer_length);
     [[nodiscard]] size_t BufferLength() const { return _buffer_length; }
+    [[nodiscard]] size_t BufferOffset() const { return _buffer_offset; }
 
 
 private:
