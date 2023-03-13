@@ -27,7 +27,7 @@ const char *SAVESTATE_MAGIC = "MELN";
 ExternalBufferSavestate::ExternalBufferSavestate(u8 *buffer, size_t buffer_length, bool saving) :
         _buffer(buffer),
         _buffer_length(buffer_length),
-        _buffer_position(0),
+        _buffer_offset(0),
         _reached_buffer_end(false)
 {
     Error = false;
@@ -112,7 +112,7 @@ ExternalBufferSavestate::ExternalBufferSavestate(u8 *buffer, size_t buffer_lengt
             return;
         }
 
-        _buffer_position += 4;
+        _buffer_offset += 4;
     }
 }
 
@@ -144,32 +144,32 @@ void ExternalBufferSavestate::Section(const char *magic)
     {
         if (CurSection != 0xFFFFFFFF)
         { // If we haven't yet started saving the emulator's state...
-            u32 pos = _buffer_position;
-            _buffer_position += 4;
+            u32 pos = _buffer_offset;
+            _buffer_offset += 4;
 
             u32 len = pos - CurSection;
-            memcpy(_buffer + _buffer_position, &len, sizeof(len));
+            memcpy(_buffer + _buffer_offset, &len, sizeof(len));
 
-            _buffer_position = pos;
+            _buffer_offset = pos;
             // Write the current section's length first, *then* the magic
         }
 
-        CurSection = _buffer_position;
+        CurSection = _buffer_offset;
 
-        memcpy(_buffer + _buffer_position, magic, 4);
-        _buffer_position += 16;
+        memcpy(_buffer + _buffer_offset, magic, 4);
+        _buffer_offset += 16;
     }
     else
     {
-        _buffer_position = 0x10;
+        _buffer_offset = 0x10;
         // Move to the savestate's header...
 
         for (;;)
         {
             u32 loaded_magic = 0;
 
-            memcpy(&loaded_magic, _buffer + _buffer_position, sizeof(loaded_magic));
-            _buffer_position += 4;
+            memcpy(&loaded_magic, _buffer + _buffer_offset, sizeof(loaded_magic));
+            _buffer_offset += 4;
             if (loaded_magic != ((u32 *) magic)[0])
             {
                 if (loaded_magic == 0)
@@ -179,13 +179,13 @@ void ExternalBufferSavestate::Section(const char *magic)
                 }
 
                 loaded_magic = 0;
-                memcpy(&loaded_magic, _buffer + _buffer_position, sizeof(loaded_magic));
-                _buffer_position += 4;
-                _buffer_position -= 8;
+                memcpy(&loaded_magic, _buffer + _buffer_offset, sizeof(loaded_magic));
+                _buffer_offset += 4;
+                _buffer_offset -= 8;
                 continue;
             }
 
-            _buffer_position += 12;
+            _buffer_offset += 12;
             break;
         }
     }
@@ -215,7 +215,7 @@ void ExternalBufferSavestate::VarArray(void *data, u32 len)
 {
     if (Error) return;
 
-    assert(_buffer_position <= _buffer_length);
+    assert(_buffer_offset <= _buffer_length);
 
     if (data == nullptr)
     {
@@ -229,7 +229,7 @@ void ExternalBufferSavestate::VarArray(void *data, u32 len)
         return;
     }
 
-    if (_buffer_length - _buffer_position < len)
+    if (_buffer_length - _buffer_offset < len)
     { // If this operation would take us past the buffer's end...
         printf("savestate: exhausted savestate buffer (%u)\n", len);
         _reached_buffer_end = true;
@@ -246,5 +246,5 @@ void ExternalBufferSavestate::VarArray(void *data, u32 len)
         memcpy(data, _buffer, len);
     }
 
-    _buffer_position += len;
+    _buffer_offset += len;
 }

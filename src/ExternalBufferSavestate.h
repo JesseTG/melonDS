@@ -52,7 +52,7 @@ public:
 private:
     u8* _buffer;
     size_t _buffer_length;
-    size_t _buffer_position;
+    size_t _buffer_offset;
     bool _reached_buffer_end;
 };
 
