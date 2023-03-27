@@ -22,6 +22,11 @@
 #include <sstream>
 #include <cassert>
 
+#include "Platform.h"
+
+using Platform::Log;
+using Platform::LogLevel;
+
 const char *SAVESTATE_MAGIC = "MELN";
 
 ExternalBufferSavestate::ExternalBufferSavestate(u8 *buffer, size_t buffer_length, bool saving) :
@@ -36,13 +41,13 @@ ExternalBufferSavestate::ExternalBufferSavestate(u8 *buffer, size_t buffer_lengt
 
     if (buffer == nullptr)
     {
-        printf("savestate: provided buffer was NULL\n");
+        Log(LogLevel::Error, "savestate: provided buffer was NULL\n");
         Error = true;
         return;
     }
     else if (buffer_length < 8)
     {
-        printf("savestate: provided buffer was too short\n");
+        Log(LogLevel::Error, "savestate: provided buffer was too short\n");
         Error = true;
         return;
     }
@@ -63,7 +68,7 @@ ExternalBufferSavestate::ExternalBufferSavestate(u8 *buffer, size_t buffer_lengt
 
         if (_reached_buffer_end)
         {
-            printf("savestate: not enough memory in provided buffer, consider reallocating\n");
+            Log(LogLevel::Error, "savestate: not enough memory in provided buffer, consider reallocating\n");
         }
     }
     else
@@ -75,7 +80,7 @@ ExternalBufferSavestate::ExternalBufferSavestate(u8 *buffer, size_t buffer_lengt
         Var32(&loaded_magic);
         if (loaded_magic != ((u32 *) SAVESTATE_MAGIC)[0])
         {
-            printf("savestate: invalid magic %08X\n", loaded_magic);
+            Log(LogLevel::Error, "savestate: invalid magic %08X\n", loaded_magic);
             Error = true;
             return;
         }
@@ -89,14 +94,14 @@ ExternalBufferSavestate::ExternalBufferSavestate(u8 *buffer, size_t buffer_lengt
 
         if (VersionMajor != SAVESTATE_MAJOR)
         {
-            printf("savestate: bad version major %d, expecting %d\n", VersionMajor, SAVESTATE_MAJOR);
+            Log(LogLevel::Error, "savestate: bad version major %d, expecting %d\n", VersionMajor, SAVESTATE_MAJOR);
             Error = true;
             return;
         }
 
         if (VersionMinor > SAVESTATE_MINOR)
         {
-            printf("savestate: state from the future, %d > %d\n", VersionMinor, SAVESTATE_MINOR);
+            Log(LogLevel::Error, "savestate: state from the future, %d > %d\n", VersionMinor, SAVESTATE_MINOR);
             Error = true;
             return;
         }
@@ -106,7 +111,7 @@ ExternalBufferSavestate::ExternalBufferSavestate(u8 *buffer, size_t buffer_lengt
 
         if (loaded_length > _buffer_length)
         {
-            printf("savestate: length of provided buffer (%zu) is smaller than savestate size (%d)\n", _buffer_length,
+            Log(LogLevel::Error, "savestate: length of provided buffer (%zu) is smaller than savestate size (%d)\n", _buffer_length,
                    loaded_length);
             Error = true;
             return;
@@ -121,7 +126,7 @@ void ExternalBufferSavestate::SetBuffer(u8 *new_buffer, size_t buffer_length)
 {
     if (buffer_length < this->_buffer_length)
     {
-        printf("savestate: setting new buffer that's smaller (%zu) than the original (%zu)\n", buffer_length,
+        Log(LogLevel::Error, "savestate: setting new buffer that's smaller (%zu) than the original (%zu)\n", buffer_length,
                this->_buffer_length);
     }
 
@@ -174,7 +179,7 @@ void ExternalBufferSavestate::Section(const char *magic)
             {
                 if (loaded_magic == 0)
                 {
-                    printf("savestate: section %s not found. blarg\n", magic);
+                    Log(LogLevel::Error, "savestate: section %s not found. blarg\n", magic);
                     return;
                 }
 
@@ -219,7 +224,7 @@ void ExternalBufferSavestate::VarArray(void *data, u32 len)
 
     if (data == nullptr)
     {
-        printf("savestate: null pointer into VarArray\n");
+        Log(LogLevel::Error, "savestate: null pointer into VarArray\n");
         Error = true;
         return;
     }
@@ -231,7 +236,7 @@ void ExternalBufferSavestate::VarArray(void *data, u32 len)
 
     if (_buffer_length - _buffer_offset < len)
     { // If this operation would take us past the buffer's end...
-        printf("savestate: exhausted savestate buffer (%u)\n", len);
+        Log(LogLevel::Error, "savestate: exhausted savestate buffer (%u)\n", len);
         _reached_buffer_end = true;
         Error = true;
         return;
