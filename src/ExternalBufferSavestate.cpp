@@ -18,9 +18,8 @@
 
 #include "ExternalBufferSavestate.h"
 
-#include <streambuf>
-#include <sstream>
 #include <cassert>
+#include <cstring>
 
 #include "Platform.h"
 
