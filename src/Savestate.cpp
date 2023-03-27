@@ -18,9 +18,6 @@
 
 #include "Savestate.h"
 
-using Platform::Log;
-using Platform::LogLevel;
-
 /*
     Savestate format
 
