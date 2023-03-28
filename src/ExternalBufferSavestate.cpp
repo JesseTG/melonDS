@@ -169,48 +169,64 @@ void ExternalBufferSavestate::Section(const char *magic)
     if (Saving)
     {
         if (CurSection != 0xFFFFFFFF)
-        { // If we haven't yet started saving the emulator's state...
-            u32 pos = _buffer_offset;
-            _buffer_offset += 4;
+        { // If we're in the middle of writing another section...
+            // ...then we should finish up and writing its length in its header.
 
-            u32 len = pos - CurSection;
-            memcpy(_buffer + _buffer_offset, &len, sizeof(len));
-
-            _buffer_offset = pos;
-            // Write the current section's length first, *then* the magic
+            // Go back to the current section's header and write its length
+            // The section length is in the 4 bytes that follow its magic
+            u32 section_length = _buffer_offset - CurSection;
+            memcpy(_buffer + _buffer_offset + 4, &section_length, sizeof(section_length));
         }
 
+        // Now that we've finished up the previous section, let's start a new one
         CurSection = _buffer_offset;
 
+        // Copy the magic...
         memcpy(_buffer + _buffer_offset, magic, 4);
+
+        // Zero out the rest of the header (we'll populate it later)
+        memset(_buffer + _buffer_offset + 4, 0, 12);
+
+        // Move past the header so we can start writing more data.
+        // Section headers are 16 bytes;
+        // we'll come back and write the length later.
+        // The last 8 bytes of section headers are reserved.
         _buffer_offset += 16;
     }
     else
     {
+        // Move to the first byte after the savestate's header
+        // (Remember, headers are 16 bytes)
         _buffer_offset = 0x10;
-        // Move to the savestate's header...
 
         for (;;)
-        {
-            u32 loaded_magic = 0;
+        { // Until we finish reading this savestate...
 
+            // Load this section's magic number
+            u32 loaded_magic = 0;
             memcpy(&loaded_magic, _buffer + _buffer_offset, sizeof(loaded_magic));
             _buffer_offset += 4;
-            if (loaded_magic != ((u32 *) magic)[0])
-            {
+
+            if (loaded_magic != *((u32 *) magic))
+            { // If this isn't the section we're looking for...
                 if (loaded_magic == 0)
                 {
                     Log(LogLevel::Error, "savestate: section %s not found. blarg\n", magic);
                     return;
                 }
 
-                loaded_magic = 0;
-                memcpy(&loaded_magic, _buffer + _buffer_offset, sizeof(loaded_magic));
-                _buffer_offset += 4;
-                _buffer_offset -= 8;
+                // Determine how big this section is so we can skip it
+                size_t loaded_length = 0;
+                memcpy(&loaded_length, _buffer + _buffer_offset, sizeof(loaded_magic));
+
+                // Skip past this section and the rest of its header
+                _buffer_offset += loaded_length + 12;
+
                 continue;
             }
 
+            // By now we've found the right section.
+            // Skip past its header so we can continue loading from it
             _buffer_offset += 12;
             break;
         }
