@@ -18,6 +18,8 @@
 
 #include "Savestate.h"
 
+const char *SAVESTATE_MAGIC = "MELN";
+
 /*
     Savestate format
 

@@ -26,8 +26,6 @@
 using Platform::Log;
 using Platform::LogLevel;
 
-const char *SAVESTATE_MAGIC = "MELN";
-
 ExternalBufferSavestate::ExternalBufferSavestate(u8 *buffer, size_t buffer_length, bool saving) :
         _buffer(buffer),
         _buffer_length(buffer_length),

@@ -26,6 +26,8 @@
 #define SAVESTATE_MAJOR 10
 #define SAVESTATE_MINOR 0
 
+extern const char *SAVESTATE_MAGIC;
+
 class Savestate
 {
 public:
