@@ -19,23 +19,14 @@
 
 #include "SavestateCounter.h"
 
-SavestateCounter::SavestateCounter() : _required_memory(0)
-{
+SavestateCounter::SavestateCounter() : _required_memory(16)
+{ // Savestate header is 16 bytes
     Saving = true;
     Error = false;
     CurSection = -1;
 
     VersionMajor = SAVESTATE_MAJOR;
     VersionMinor = SAVESTATE_MINOR;
-
-    u16 major = SAVESTATE_MAJOR;
-    u16 minor = SAVESTATE_MINOR;
-    u32 zero = 0;
-
-    this->VarArray((void *) SAVESTATE_MAGIC, 4);
-    this->Var16(&major);
-    this->Var16(&minor);
-    this->Var32(&zero); // Length to be fixed at the end
 }
 
 void SavestateCounter::Section(const char *magic)
