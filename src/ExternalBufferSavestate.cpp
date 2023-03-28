@@ -73,11 +73,12 @@ ExternalBufferSavestate::ExternalBufferSavestate(u8 *buffer, size_t buffer_lengt
         VersionMajor = 0;
         VersionMinor = 0;
 
+        u32 magic_offset = _buffer_offset;
         u32 loaded_magic = 0;
         Var32(&loaded_magic);
         if (loaded_magic != ((u32 *) SAVESTATE_MAGIC)[0])
         {
-            Log(LogLevel::Error, "savestate: invalid magic %08X\n", loaded_magic);
+            Log(LogLevel::Error, "savestate: invalid magic %#08X at position %#08X\n", loaded_magic, magic_offset);
             Error = true;
             return;
         }
