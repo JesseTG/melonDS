@@ -31,7 +31,7 @@ class ExternalBufferSavestate final : public Savestate
 {
 public:
     ExternalBufferSavestate(u8* buffer, size_t buffer_length, bool saving);
-    ~ExternalBufferSavestate() final = default;
+    ~ExternalBufferSavestate() final;
 
     void Section(const char* magic) final;
 

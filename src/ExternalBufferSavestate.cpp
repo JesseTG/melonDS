@@ -118,6 +118,29 @@ ExternalBufferSavestate::ExternalBufferSavestate(u8 *buffer, size_t buffer_lengt
     }
 }
 
+ExternalBufferSavestate::~ExternalBufferSavestate()
+{
+    if (Error) return;
+
+    if (Saving)
+    {
+        if (CurSection != 0xFFFFFFFF)
+        {
+            u32 pos = _buffer_offset;
+            _buffer_offset += 4;
+
+            u32 len = pos - CurSection;
+            memcpy(_buffer + _buffer_offset, &len, sizeof(len));
+
+            _buffer_offset = pos;
+            // Write the current section's length first, *then* the magic
+        }
+
+        // Finish it all up by writing the length
+        u32 len = _buffer_offset;
+        memcpy(_buffer + 8, &len, sizeof(len));
+    }
+}
 
 void ExternalBufferSavestate::SetBuffer(u8 *new_buffer, size_t buffer_length)
 {
