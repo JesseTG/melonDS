@@ -170,7 +170,7 @@ void ExternalBufferSavestate::Section(const char *magic)
     {
         if (CurSection != 0xFFFFFFFF)
         { // If we're in the middle of writing another section...
-            // ...then we should finish up and writing its length in its header.
+            // ...then we should finish up by writing its length in its header.
 
             // Go back to the current section's header and write its length
             // The section length is in the 4 bytes that follow its magic
