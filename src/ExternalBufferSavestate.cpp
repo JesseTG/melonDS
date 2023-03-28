@@ -61,7 +61,11 @@ ExternalBufferSavestate::ExternalBufferSavestate(u8 *buffer, size_t buffer_lengt
         this->VarArray((void *) SAVESTATE_MAGIC, 4);
         this->Var16(&major);
         this->Var16(&minor);
-        this->Var32(&zero); // Length to be fixed at the end
+
+        // Skip past the length (which we'll fill in at the end)
+        // and the reserved data.
+        this->Var32(&zero); // Skip past the length, which we'll populate at the end
+        this->Var32(&zero); // Skip past the reserved section, which will stay 0
 
         if (_reached_buffer_end)
         {
@@ -115,6 +119,7 @@ ExternalBufferSavestate::ExternalBufferSavestate(u8 *buffer, size_t buffer_lengt
             return;
         }
 
+        // Skip past the reserved field
         _buffer_offset += 4;
     }
 }
@@ -126,20 +131,17 @@ ExternalBufferSavestate::~ExternalBufferSavestate()
     if (Saving)
     {
         if (CurSection != 0xFFFFFFFF)
-        {
-            u32 pos = _buffer_offset;
-            _buffer_offset += 4;
+        { // If we're in the middle of writing a section...
+            // ...then we should finish up by writing its length in its header.
 
-            u32 len = pos - CurSection;
-            memcpy(_buffer + _buffer_offset, &len, sizeof(len));
-
-            _buffer_offset = pos;
-            // Write the current section's length first, *then* the magic
+            // Go back to the current section's header and write its length
+            // The section length is in the 4 bytes that follow its magic
+            u32 section_length = _buffer_offset - CurSection;
+            memcpy(_buffer + _buffer_offset + 4, &section_length, sizeof(section_length));
         }
 
-        // Finish it all up by writing the length
-        u32 len = _buffer_offset;
-        memcpy(_buffer + 8, &len, sizeof(len));
+        // Write the savestate's length in the header
+        memcpy(_buffer + 8, &_buffer_offset, sizeof(_buffer_offset));
     }
 }
 
