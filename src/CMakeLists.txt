@@ -43,6 +43,7 @@ add_library(core STATIC
     FreeBIOS.h
     RTC.cpp
     Savestate.cpp
+    SavestateCounter.cpp
     SPI.cpp
     SPU.cpp
     types.h
