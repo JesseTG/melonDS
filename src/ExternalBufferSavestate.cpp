@@ -265,11 +265,11 @@ void ExternalBufferSavestate::VarArray(void *data, u32 len)
 
     if (Saving)
     {
-        memcpy(_buffer, data, len);
+        memcpy(_buffer + _buffer_offset, data, len);
     }
     else
     {
-        memcpy(data, _buffer, len);
+        memcpy(data, _buffer + _buffer_offset, len);
     }
 
     _buffer_offset += len;
