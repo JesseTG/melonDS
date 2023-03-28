@@ -40,6 +40,7 @@ SavestateCounter::SavestateCounter() : _required_memory(0)
 
 void SavestateCounter::Section(const char *magic)
 {
+    CurSection = _required_memory;
     _required_memory += 16; // Section headers are 16 bytes
 }
 
