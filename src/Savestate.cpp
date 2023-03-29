@@ -213,58 +213,22 @@ void Savestate::Section(const char* magic)
 
 void Savestate::Var8(u8* var)
 {
-    if (error) return;
-
-    if (saving)
-    {
-        fwrite(var, 1, 1, file);
-    }
-    else
-    {
-        fread(var, 1, 1, file);
-    }
+    VarArray(var, sizeof(*var));
 }
 
 void Savestate::Var16(u16* var)
 {
-    if (error) return;
-
-    if (saving)
-    {
-        fwrite(var, 2, 1, file);
-    }
-    else
-    {
-        fread(var, 2, 1, file);
-    }
+    VarArray(var, sizeof(*var));
 }
 
 void Savestate::Var32(u32* var)
 {
-    if (error) return;
-
-    if (saving)
-    {
-        fwrite(var, 4, 1, file);
-    }
-    else
-    {
-        fread(var, 4, 1, file);
-    }
+    VarArray(var, sizeof(*var));
 }
 
 void Savestate::Var64(u64* var)
 {
-    if (error) return;
-
-    if (saving)
-    {
-        fwrite(var, 8, 1, file);
-    }
-    else
-    {
-        fread(var, 8, 1, file);
-    }
+    VarArray(var, sizeof(*var));
 }
 
 void Savestate::Bool32(bool* var)
