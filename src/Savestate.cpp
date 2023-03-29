@@ -211,42 +211,6 @@ void Savestate::Section(const char* magic)
     }
 }
 
-void Savestate::Var8(u8* var)
-{
-    VarArray(var, sizeof(*var));
-}
-
-void Savestate::Var16(u16* var)
-{
-    VarArray(var, sizeof(*var));
-}
-
-void Savestate::Var32(u32* var)
-{
-    VarArray(var, sizeof(*var));
-}
-
-void Savestate::Var64(u64* var)
-{
-    VarArray(var, sizeof(*var));
-}
-
-void Savestate::Bool32(bool* var)
-{
-    // for compability
-    if (saving)
-    {
-        u32 val = *var;
-        Var32(&val);
-    }
-    else
-    {
-        u32 val;
-        Var32(&val);
-        *var = val != 0;
-    }
-}
-
 void Savestate::VarArray(void* data, u32 len)
 {
     if (error) return;

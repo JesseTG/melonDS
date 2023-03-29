@@ -38,12 +38,41 @@ public:
 
     void Section(const char* magic);
 
-    void Var8(u8* var);
-    void Var16(u16* var);
-    void Var32(u32* var);
-    void Var64(u64* var);
+    void Var8(u8* var)
+    {
+        VarArray(var, sizeof(*var));
+    }
 
-    void Bool32(bool* var);
+    void Var16(u16* var)
+    {
+        VarArray(var, sizeof(*var));
+    }
+
+    void Var32(u32* var)
+    {
+        VarArray(var, sizeof(*var));
+    }
+
+    void Var64(u64* var)
+    {
+        VarArray(var, sizeof(*var));
+    }
+
+    void Bool32(bool* var)
+    {
+        // for compability
+        if (saving)
+        {
+            u32 val = *var;
+            Var32(&val);
+        }
+        else
+        {
+            u32 val;
+            Var32(&val);
+            *var = val != 0;
+        }
+    }
 
     /// Writes or reads the given data into or from the given buffer.
     /// @param[in,out] data The buffer to operate on.
