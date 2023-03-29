@@ -32,7 +32,7 @@ public:
     Savestate(std::string filename, bool save);
     ~Savestate();
 
-    [[nodiscard]] bool Error() const { return error; };
+    [[nodiscard]] bool Error() const { return error; }
 
     bool Saving;
     u32 VersionMajor;
