@@ -298,7 +298,7 @@ bool LoadState(std::string filename)
     bool failed = false;
 
     Savestate* state = new Savestate(filename, false);
-    if (state->Error)
+    if (state->Error())
     {
         delete state;
 
@@ -338,7 +338,7 @@ bool LoadState(std::string filename)
 bool SaveState(std::string filename)
 {
     Savestate* state = new Savestate(filename, true);
-    if (state->Error)
+    if (state->Error())
     {
         delete state;
         return false;

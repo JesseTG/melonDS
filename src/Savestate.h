@@ -32,7 +32,7 @@ public:
     Savestate(std::string filename, bool save);
     ~Savestate();
 
-    bool Error;
+    [[nodiscard]] bool Error() const { return error; };
 
     bool Saving;
     u32 VersionMajor;
@@ -60,6 +60,7 @@ public:
 
 private:
     FILE* file;
+    bool error;
 };
 
 #endif // SAVESTATE_H

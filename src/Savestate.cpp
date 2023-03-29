@@ -53,7 +53,7 @@ Savestate::Savestate(std::string filename, bool save)
 {
     const char* magic = "MELN";
 
-    Error = false;
+    error = false;
 
     if (save)
     {
@@ -62,7 +62,7 @@ Savestate::Savestate(std::string filename, bool save)
         if (!file)
         {
             Log(LogLevel::Error, "savestate: file %s doesn't exist\n", filename.c_str());
-            Error = true;
+            error = true;
             return;
         }
 
@@ -81,7 +81,7 @@ Savestate::Savestate(std::string filename, bool save)
         if (!file)
         {
             Log(LogLevel::Error, "savestate: file %s doesn't exist\n", filename.c_str());
-            Error = true;
+            error = true;
             return;
         }
 
@@ -96,7 +96,7 @@ Savestate::Savestate(std::string filename, bool save)
         if (buf != ((u32*)magic)[0])
         {
             Log(LogLevel::Error, "savestate: invalid magic %08X\n", buf);
-            Error = true;
+            error = true;
             return;
         }
 
@@ -107,7 +107,7 @@ Savestate::Savestate(std::string filename, bool save)
         if (VersionMajor != SAVESTATE_MAJOR)
         {
             Log(LogLevel::Error, "savestate: bad version major %d, expecting %d\n", VersionMajor, SAVESTATE_MAJOR);
-            Error = true;
+            error = true;
             return;
         }
 
@@ -115,7 +115,7 @@ Savestate::Savestate(std::string filename, bool save)
         if (VersionMinor > SAVESTATE_MINOR)
         {
             Log(LogLevel::Error, "savestate: state from the future, %d > %d\n", VersionMinor, SAVESTATE_MINOR);
-            Error = true;
+            error = true;
             return;
         }
 
@@ -124,7 +124,7 @@ Savestate::Savestate(std::string filename, bool save)
         if (buf != len)
         {
             Log(LogLevel::Error, "savestate: bad length %d\n", buf);
-            Error = true;
+            error = true;
             return;
         }
 
@@ -136,7 +136,7 @@ Savestate::Savestate(std::string filename, bool save)
 
 Savestate::~Savestate()
 {
-    if (Error) return;
+    if (error) return;
 
     if (Saving)
     {
@@ -162,7 +162,7 @@ Savestate::~Savestate()
 
 void Savestate::Section(const char* magic)
 {
-    if (Error) return;
+    if (error) return;
 
     if (Saving)
     {
@@ -213,7 +213,7 @@ void Savestate::Section(const char* magic)
 
 void Savestate::Var8(u8* var)
 {
-    if (Error) return;
+    if (error) return;
 
     if (Saving)
     {
@@ -227,7 +227,7 @@ void Savestate::Var8(u8* var)
 
 void Savestate::Var16(u16* var)
 {
-    if (Error) return;
+    if (error) return;
 
     if (Saving)
     {
@@ -241,7 +241,7 @@ void Savestate::Var16(u16* var)
 
 void Savestate::Var32(u32* var)
 {
-    if (Error) return;
+    if (error) return;
 
     if (Saving)
     {
@@ -255,7 +255,7 @@ void Savestate::Var32(u32* var)
 
 void Savestate::Var64(u64* var)
 {
-    if (Error) return;
+    if (error) return;
 
     if (Saving)
     {
@@ -285,7 +285,7 @@ void Savestate::Bool32(bool* var)
 
 void Savestate::VarArray(void* data, u32 len)
 {
-    if (Error) return;
+    if (error) return;
 
     if (Saving)
     {
