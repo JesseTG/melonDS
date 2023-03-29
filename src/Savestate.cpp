@@ -66,12 +66,12 @@ Savestate::Savestate(std::string filename, bool save)
             return;
         }
 
-        VersionMajor = SAVESTATE_MAJOR;
-        VersionMinor = SAVESTATE_MINOR;
+        version_major = SAVESTATE_MAJOR;
+        version_minor = SAVESTATE_MINOR;
 
         fwrite(magic, 4, 1, file);
-        fwrite(&VersionMajor, 2, 1, file);
-        fwrite(&VersionMinor, 2, 1, file);
+        fwrite(&version_major, 2, 1, file);
+        fwrite(&version_minor, 2, 1, file);
         fseek(file, 8, SEEK_CUR); // length to be fixed later
     }
     else
@@ -100,21 +100,21 @@ Savestate::Savestate(std::string filename, bool save)
             return;
         }
 
-        VersionMajor = 0;
-        VersionMinor = 0;
+        version_major = 0;
+        version_minor = 0;
 
-        fread(&VersionMajor, 2, 1, file);
-        if (VersionMajor != SAVESTATE_MAJOR)
+        fread(&version_major, 2, 1, file);
+        if (version_major != SAVESTATE_MAJOR)
         {
-            Log(LogLevel::Error, "savestate: bad version major %d, expecting %d\n", VersionMajor, SAVESTATE_MAJOR);
+            Log(LogLevel::Error, "savestate: bad version major %d, expecting %d\n", version_major, SAVESTATE_MAJOR);
             error = true;
             return;
         }
 
-        fread(&VersionMinor, 2, 1, file);
-        if (VersionMinor > SAVESTATE_MINOR)
+        fread(&version_minor, 2, 1, file);
+        if (version_minor > SAVESTATE_MINOR)
         {
-            Log(LogLevel::Error, "savestate: state from the future, %d > %d\n", VersionMinor, SAVESTATE_MINOR);
+            Log(LogLevel::Error, "savestate: state from the future, %d > %d\n", version_minor, SAVESTATE_MINOR);
             error = true;
             return;
         }

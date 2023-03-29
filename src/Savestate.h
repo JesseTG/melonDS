@@ -35,8 +35,6 @@ public:
     [[nodiscard]] bool Error() const { return error; }
 
     [[nodiscard]] bool Saving() const { return saving; }
-    u32 VersionMajor;
-    u32 VersionMinor;
 
     void Section(const char* magic);
 
@@ -51,14 +49,16 @@ public:
 
     bool IsAtleastVersion(u32 major, u32 minor)
     {
-        if (VersionMajor > major) return true;
-        if (VersionMajor == major && VersionMinor >= minor) return true;
+        if (version_major > major) return true;
+        if (version_major == major && version_minor >= minor) return true;
         return false;
     }
 
 private:
     FILE* file;
     u32 current_section;
+    u32 version_major;
+    u32 version_minor;
     bool error;
     bool saving;
 };
