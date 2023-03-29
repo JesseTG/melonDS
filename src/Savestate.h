@@ -38,8 +38,6 @@ public:
     u32 VersionMajor;
     u32 VersionMinor;
 
-    u32 CurSection;
-
     void Section(const char* magic);
 
     void Var8(u8* var);
@@ -60,6 +58,7 @@ public:
 
 private:
     FILE* file;
+    u32 current_section;
     bool error;
     bool saving;
 };

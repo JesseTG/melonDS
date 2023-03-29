@@ -131,7 +131,7 @@ Savestate::Savestate(std::string filename, bool save)
         fseek(file, 4, SEEK_CUR);
     }
 
-    CurSection = -1;
+    current_section = -1;
 }
 
 Savestate::~Savestate()
@@ -140,12 +140,12 @@ Savestate::~Savestate()
 
     if (saving)
     {
-        if (CurSection != 0xFFFFFFFF)
+        if (current_section != 0xFFFFFFFF)
         {
             u32 pos = (u32)ftell(file);
-            fseek(file, CurSection+4, SEEK_SET);
+            fseek(file, current_section + 4, SEEK_SET);
 
-            u32 len = pos - CurSection;
+            u32 len = pos - current_section;
             fwrite(&len, 4, 1, file);
 
             fseek(file, pos, SEEK_SET);
@@ -166,18 +166,18 @@ void Savestate::Section(const char* magic)
 
     if (saving)
     {
-        if (CurSection != 0xFFFFFFFF)
+        if (current_section != 0xFFFFFFFF)
         {
             u32 pos = (u32)ftell(file);
-            fseek(file, CurSection+4, SEEK_SET);
+            fseek(file, current_section + 4, SEEK_SET);
 
-            u32 len = pos - CurSection;
+            u32 len = pos - current_section;
             fwrite(&len, 4, 1, file);
 
             fseek(file, pos, SEEK_SET);
         }
 
-        CurSection = (u32)ftell(file);
+        current_section = (u32)ftell(file);
 
         fwrite(magic, 4, 1, file);
         fseek(file, 12, SEEK_CUR);
