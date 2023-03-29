@@ -47,7 +47,7 @@ public:
 
     void VarArray(void* data, u32 len);
 
-    bool IsAtleastVersion(u32 major, u32 minor)
+    [[nodiscard]] bool IsAtLeastVersion(u32 major, u32 minor) const
     {
         if (version_major > major) return true;
         if (version_major == major && version_minor >= minor) return true;
