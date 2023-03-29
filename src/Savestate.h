@@ -45,6 +45,11 @@ public:
 
     void Bool32(bool* var);
 
+    /// Writes or reads the given data into or from the given buffer.
+    /// @param[in,out] data The buffer to operate on.
+    /// Writes into this buffer if ::saving is true,
+    /// reads from it if not.
+    /// @param len The size of the buffer given by \c data.
     void VarArray(void* data, u32 len);
 
     [[nodiscard]] bool IsAtLeastVersion(u32 major, u32 minor) const
