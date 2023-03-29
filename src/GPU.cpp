@@ -351,7 +351,7 @@ void DoSavestate(Savestate* file)
     file->Var32(&VRAMMap_ARM7[0]);
     file->Var32(&VRAMMap_ARM7[1]);
 
-    if (!file->Saving)
+    if (!file->Saving())
     {
         for (int i = 0; i < 0x20; i++)
             VRAMPtr_ABG[i] = GetUniqueBankPtr(VRAMMap_ABG[i], i << 14);

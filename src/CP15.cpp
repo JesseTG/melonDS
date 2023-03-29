@@ -94,7 +94,7 @@ void ARMv5::CP15DoSavestate(Savestate* file)
 
     file->VarArray(PU_Region, 8*sizeof(u32));
 
-    if (!file->Saving)
+    if (!file->Saving())
     {
         UpdateDTCMSetting();
         UpdateITCMSetting();

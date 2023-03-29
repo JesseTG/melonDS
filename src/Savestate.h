@@ -34,7 +34,7 @@ public:
 
     [[nodiscard]] bool Error() const { return error; }
 
-    bool Saving;
+    [[nodiscard]] bool Saving() const { return saving; }
     u32 VersionMajor;
     u32 VersionMinor;
 
@@ -61,6 +61,7 @@ public:
 private:
     FILE* file;
     bool error;
+    bool saving;
 };
 
 #endif // SAVESTATE_H

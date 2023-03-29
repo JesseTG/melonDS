@@ -738,7 +738,7 @@ bool DoSavestate_Scheduler(Savestate* file)
     };
 
     int len = Event_MAX;
-    if (file->Saving)
+    if (file->Saving())
     {
         for (int i = 0; i < len; i++)
         {
@@ -805,7 +805,7 @@ bool DoSavestate(Savestate* file)
 {
     file->Section("NDSG");
 
-    if (file->Saving)
+    if (file->Saving())
     {
         u32 console = ConsoleType;
         file->Var32(&console);
@@ -891,7 +891,7 @@ bool DoSavestate(Savestate* file)
 
     file->Bool32(&RunningGame);
 
-    if (!file->Saving)
+    if (!file->Saving())
     {
         // 'dept of redundancy dept'
         // but we do need to update the mappings
@@ -921,7 +921,7 @@ bool DoSavestate(Savestate* file)
     if (ConsoleType == 1)
         DSi::DoSavestate(file);
 
-    if (!file->Saving)
+    if (!file->Saving())
     {
         GPU::SetPowerCnt(PowerControl9);
 
@@ -930,7 +930,7 @@ bool DoSavestate(Savestate* file)
     }
 
 #ifdef JIT_ENABLED
-    if (!file->Saving)
+    if (!file->Saving())
     {
         ARMJIT::ResetBlockCache();
         ARMJIT_Memory::Reset();

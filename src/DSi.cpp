@@ -193,7 +193,7 @@ void DoSavestate(Savestate* file)
     //file->VarArray(ARM9iBIOS, 0x10000);
     //file->VarArray(ARM7iBIOS, 0x10000);
 
-    if (file->Saving)
+    if (file->Saving())
     {
         file->VarArray(&MBK[0][0], sizeof(u32)*8);
         file->VarArray(&MBK[1][5], sizeof(u32)*3);

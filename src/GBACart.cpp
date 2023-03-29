@@ -181,7 +181,7 @@ void CartGame::DoSavestate(Savestate* file)
 
     file->Var8((u8*)&SRAMType);
 
-    if ((!file->Saving) && SRAM)
+    if ((!file->Saving()) && SRAM)
         Platform::WriteGBASave(SRAM, SRAMLength, 0, SRAMLength);
 }
 
@@ -737,7 +737,7 @@ void DoSavestate(Savestate* file)
         cartchk = Cart->Checksum();
     }
 
-    if (file->Saving)
+    if (file->Saving())
     {
         file->Var32(&carttype);
         file->Var32(&cartchk);

@@ -481,7 +481,7 @@ void DoSavestate(Savestate* file)
         file->VarArray(vtx->FinalColor, sizeof(s32)*3);
     }
 
-    if (file->Saving)
+    if (file->Saving())
     {
         u32 id;
         if (LastStripPolygon) id = (u32)((LastStripPolygon - (&PolygonRAM[0])) / sizeof(Polygon));
@@ -524,7 +524,7 @@ void DoSavestate(Savestate* file)
 
         // this is a bit ugly, but eh
         // we can't save the pointers as-is, that's a bad idea
-        if (file->Saving)
+        if (file->Saving())
         {
             for (int j = 0; j < 10; j++)
             {
@@ -576,7 +576,7 @@ void DoSavestate(Savestate* file)
 
         file->Var32(&poly->SortKey);
 
-        if (!file->Saving)
+        if (!file->Saving())
         {
             poly->Degenerate = false;
 
@@ -599,7 +599,7 @@ void DoSavestate(Savestate* file)
     file->Var32((u32*)&VertexSlotCounter);
     file->Var32(&VertexSlotsFree);
 
-    if (!file->Saving)
+    if (!file->Saving())
     {
         ClipMatrixDirty = true;
         UpdateClipMatrix();

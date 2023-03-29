@@ -57,7 +57,7 @@ Savestate::Savestate(std::string filename, bool save)
 
     if (save)
     {
-        Saving = true;
+        saving = true;
         file = Platform::OpenLocalFile(filename, "wb");
         if (!file)
         {
@@ -76,7 +76,7 @@ Savestate::Savestate(std::string filename, bool save)
     }
     else
     {
-        Saving = false;
+        saving = false;
         file = Platform::OpenFile(filename, "rb");
         if (!file)
         {
@@ -138,7 +138,7 @@ Savestate::~Savestate()
 {
     if (error) return;
 
-    if (Saving)
+    if (saving)
     {
         if (CurSection != 0xFFFFFFFF)
         {
@@ -164,7 +164,7 @@ void Savestate::Section(const char* magic)
 {
     if (error) return;
 
-    if (Saving)
+    if (saving)
     {
         if (CurSection != 0xFFFFFFFF)
         {
@@ -215,7 +215,7 @@ void Savestate::Var8(u8* var)
 {
     if (error) return;
 
-    if (Saving)
+    if (saving)
     {
         fwrite(var, 1, 1, file);
     }
@@ -229,7 +229,7 @@ void Savestate::Var16(u16* var)
 {
     if (error) return;
 
-    if (Saving)
+    if (saving)
     {
         fwrite(var, 2, 1, file);
     }
@@ -243,7 +243,7 @@ void Savestate::Var32(u32* var)
 {
     if (error) return;
 
-    if (Saving)
+    if (saving)
     {
         fwrite(var, 4, 1, file);
     }
@@ -257,7 +257,7 @@ void Savestate::Var64(u64* var)
 {
     if (error) return;
 
-    if (Saving)
+    if (saving)
     {
         fwrite(var, 8, 1, file);
     }
@@ -270,7 +270,7 @@ void Savestate::Var64(u64* var)
 void Savestate::Bool32(bool* var)
 {
     // for compability
-    if (Saving)
+    if (saving)
     {
         u32 val = *var;
         Var32(&val);
@@ -287,7 +287,7 @@ void Savestate::VarArray(void* data, u32 len)
 {
     if (error) return;
 
-    if (Saving)
+    if (saving)
     {
         fwrite(data, len, 1, file);
     }

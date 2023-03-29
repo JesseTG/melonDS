@@ -452,7 +452,7 @@ void CartRetail::DoSavestate(Savestate* file)
     file->Var32(&SRAMAddr);
     file->Var8(&SRAMStatus);
 
-    if ((!file->Saving) && SRAM)
+    if ((!file->Saving()) && SRAM)
         Platform::WriteNDSSave(SRAM, SRAMLength, 0, SRAMLength);
 }
 
@@ -897,7 +897,7 @@ void CartRetailNAND::DoSavestate(Savestate* file)
     file->VarArray(SRAMWriteBuffer, 0x800);
     file->Var32(&SRAMWritePos);
 
-    if (!file->Saving)
+    if (!file->Saving())
         BuildSRAMID();
 }
 
@@ -1508,7 +1508,7 @@ void DoSavestate(Savestate* file)
         cartchk = Cart->Checksum();
     }
 
-    if (file->Saving)
+    if (file->Saving())
     {
         file->Var32(&carttype);
         file->Var32(&cartchk);
