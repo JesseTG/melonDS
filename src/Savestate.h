@@ -60,7 +60,7 @@ public:
 
     void Bool32(bool* var)
     {
-        // for compability
+        // for compatibility
         if (saving)
         {
             u32 val = *var;
