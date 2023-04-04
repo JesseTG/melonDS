@@ -349,6 +349,18 @@ FILE* OpenLocalFile(std::string path, std::string mode)
     return OpenFile(fullpath.toStdString(), mode, mode[0] != 'w');
 }
 
+size_t GetFileSize(FILE* file)
+{
+    if (!file)
+        return 0;
+
+    long current_position = ftell(file);
+    fseek(file, 0, SEEK_END);
+    size_t file_size = ftell(file);
+    fseek(file, current_position, SEEK_SET);
+    return file_size;
+}
+
 void Log(LogLevel level, const char* fmt, ...)
 {
     if (fmt == nullptr)
