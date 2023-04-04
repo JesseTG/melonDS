@@ -26,7 +26,7 @@
 #define SAVESTATE_MAJOR 10
 #define SAVESTATE_MINOR 0
 
-class Savestate
+class Savestate final
 {
 public:
     Savestate(std::string filename, bool save);
