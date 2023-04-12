@@ -76,12 +76,20 @@ void Reset()
     Registers[0x81] = 0x64;
 }
 
-void DoSavestate(Savestate* file)
+[[deprecated]] void DoSavestate(Savestate* file)
 {
     file->Section("I2BP");
 
     file->VarArray(Registers, 0x100);
     file->Var32(&CurPos);
+}
+
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("I2BP");
+
+    writer.VarArray(Registers, sizeof(Registers));
+    writer.Var32(CurPos);
 }
 
 u8 GetBootFlag() { return Registers[0x70]; }
@@ -200,6 +208,17 @@ void DoSavestate(Savestate* file)
     file->Var32(&Device);
 
     DSi_BPTWL::DoSavestate(file);
+}
+
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("I2Ci");
+
+    writer.Var8(Cnt);
+    writer.Var8(Data);
+    writer.Var32(Device);
+
+    DSi_BPTWL::SaveState(writer);
 }
 
 void WriteCnt(u8 val)

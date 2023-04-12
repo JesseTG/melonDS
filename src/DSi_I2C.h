@@ -52,7 +52,8 @@ extern u8 Cnt;
 bool Init();
 void DeInit();
 void Reset();
-void DoSavestate(Savestate* file);
+[[deprecated]] void DoSavestate(Savestate* file);
+void SaveState(SavestateWriter& writer);
 
 void WriteCnt(u8 val);
 

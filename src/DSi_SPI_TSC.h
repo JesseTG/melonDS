@@ -30,7 +30,8 @@ extern u32 DataPos;
 bool Init();
 void DeInit();
 void Reset();
-void DoSavestate(Savestate* file);
+[[deprecated]] void DoSavestate(Savestate* file);
+void SaveState(SavestateWriter& writer);
 
 // 00=DS-mode 01=normal
 void SetMode(u8 mode);

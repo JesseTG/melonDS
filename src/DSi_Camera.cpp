@@ -106,6 +106,20 @@ void DoSavestate(Savestate* file)
     Camera1->DoSavestate(file);
 }
 
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("CAMi");
+
+    writer.Var16(ModuleCnt);
+    writer.Var16(Cnt);
+
+    /*file->VarArray(FrameBuffer, sizeof(FrameBuffer));
+    file->Var32(&TransferPos);
+    file->Var32(&FrameLength);*/
+
+    Camera0->SaveState(writer);
+    Camera1->SaveState(writer);
+}
 
 void IRQ(u32 param)
 {
@@ -422,6 +436,27 @@ void Camera::DoSavestate(Savestate* file)
 
     file->Var16(&MCUAddr);
     file->VarArray(MCURegs, 0x8000);
+}
+
+void Camera::SaveState(SavestateWriter& writer)
+{
+    char magic[5] = "CAMx";
+    magic[3] = '0' + Num;
+    writer.Section(magic);
+
+    writer.Var32(DataPos);
+    writer.Var32(RegAddr);
+    writer.Var16(RegData);
+
+    writer.Var16(PLLDiv);
+    writer.Var16(PLLPDiv);
+    writer.Var16(PLLCnt);
+    writer.Var16(ClocksCnt);
+    writer.Var16(StandbyCnt);
+    writer.Var16(MiscCnt);
+
+    writer.Var16(MCUAddr);
+    writer.VarArray(MCURegs, sizeof(MCURegs));
 }
 
 void Camera::Reset()

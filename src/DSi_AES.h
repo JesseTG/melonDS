@@ -31,7 +31,8 @@ bool Init();
 void DeInit();
 void Reset();
 
-void DoSavestate(Savestate* file);
+[[deprecated]] void DoSavestate(Savestate* file);
+void SaveState(SavestateWriter& writer);
 
 u32 ReadCnt();
 void WriteCnt(u32 val);

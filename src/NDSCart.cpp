@@ -248,6 +248,15 @@ void CartCommon::DoSavestate(Savestate* file)
     file->Bool32(&DSiMode);
 }
 
+void CartCommon::SaveState(SavestateWriter& writer)
+{
+    writer.Section("NDCS");
+
+    writer.Var32(CmdEncMode);
+    writer.Var32(DataEncMode);
+    writer.Bool32(DSiMode);
+}
+
 void CartCommon::SetupSave(u32 type)
 {
 }
@@ -454,6 +463,37 @@ void CartRetail::DoSavestate(Savestate* file)
 
     if ((!file->Saving()) && SRAM)
         Platform::WriteNDSSave(SRAM, SRAMLength, 0, SRAMLength);
+}
+
+void CartRetail::SaveState(SavestateWriter& writer)
+{
+    CartCommon::SaveState(writer);
+
+    // we reload the SRAM contents.
+    // it should be the same file, but the contents may change
+
+    u32 oldlen = SRAMLength;
+
+    writer.Var32(SRAMLength);
+    if (SRAMLength != oldlen)
+    {
+        Log(LogLevel::Warn, "savestate: VERY BAD!!!! SRAM LENGTH DIFFERENT. %d -> %d\n", oldlen, SRAMLength);
+        Log(LogLevel::Warn, "oh well. loading it anyway. adsfgdsf\n");
+
+        if (oldlen) delete[] SRAM;
+        SRAM = nullptr;
+        if (SRAMLength) SRAM = new u8[SRAMLength];
+    }
+    if (SRAMLength)
+    {
+        writer.VarArray(SRAM, SRAMLength);
+    }
+
+    // SPI status shito
+
+    writer.Var8(SRAMCmd);
+    writer.Var32(SRAMAddr);
+    writer.Var8(SRAMStatus);
 }
 
 void CartRetail::SetupSave(u32 type)
@@ -901,6 +941,17 @@ void CartRetailNAND::DoSavestate(Savestate* file)
         BuildSRAMID();
 }
 
+void CartRetailNAND::SaveState(SavestateWriter& writer)
+{
+    CartRetail::SaveState(writer);
+
+    writer.Var32(SRAMBase);
+    writer.Var32(SRAMWindow);
+
+    writer.VarArray(SRAMWriteBuffer, sizeof(SRAMWriteBuffer));
+    writer.Var32(SRAMWritePos);
+}
+
 void CartRetailNAND::LoadSave(const u8* savedata, u32 savelen)
 {
     CartRetail::LoadSave(savedata, savelen);
@@ -1115,6 +1166,13 @@ void CartRetailIR::DoSavestate(Savestate* file)
     file->Var8(&IRCmd);
 }
 
+void CartRetailIR::SaveState(SavestateWriter& writer)
+{
+    CartRetail::SaveState(writer);
+
+    writer.Var8(IRCmd);
+}
+
 u8 CartRetailIR::SPIWrite(u8 val, u32 pos, bool last)
 {
     if (pos == 0)
@@ -1155,6 +1213,11 @@ void CartRetailBT::Reset()
 void CartRetailBT::DoSavestate(Savestate* file)
 {
     CartRetail::DoSavestate(file);
+}
+
+void CartRetailBT::SaveState(SavestateWriter& writer)
+{
+    CartRetail::SaveState(writer);
 }
 
 u8 CartRetailBT::SPIWrite(u8 val, u32 pos, bool last)
@@ -1254,6 +1317,11 @@ void CartHomebrew::SetupDirectBoot(std::string romname)
 void CartHomebrew::DoSavestate(Savestate* file)
 {
     CartCommon::DoSavestate(file);
+}
+
+void CartHomebrew::SaveState(SavestateWriter& writer)
+{
+    CartCommon::SaveState(writer);
 }
 
 int CartHomebrew::ROMCommandStart(u8* cmd, u8* data, u32 len)
@@ -1525,6 +1593,45 @@ void DoSavestate(Savestate* file)
     }
 
     if (Cart) Cart->DoSavestate(file);
+}
+
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("NDSC");
+
+    writer.Var16(SPICnt);
+    writer.Var32(ROMCnt);
+
+    writer.Var8(SPIData);
+    writer.Var32(SPIDataPos);
+    writer.Bool32(SPIHold);
+
+    writer.VarArray(ROMCommand, sizeof(ROMCommand));
+    writer.Var32(ROMData);
+
+    writer.VarArray(TransferData, sizeof(TransferData));
+    writer.Var32(TransferPos);
+    writer.Var32(TransferLen);
+    writer.Var32(TransferDir);
+    writer.VarArray(TransferCmd, sizeof(TransferCmd));
+
+    // cart inserted/len/ROM/etc should be already populated
+    // savestate should be loaded after the right game is loaded
+    // (TODO: system to verify that indeed the right ROM is loaded)
+    // (what to CRC? whole ROM? code binaries? latter would be more convenient for ie. romhaxing)
+
+    u32 carttype = 0;
+    u32 cartchk = 0;
+    if (Cart)
+    {
+        carttype = Cart->Type();
+        cartchk = Cart->Checksum();
+    }
+
+    writer.Var32(carttype);
+    writer.Var32(cartchk);
+
+    if (Cart) Cart->SaveState(writer);
 }
 
 

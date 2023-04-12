@@ -30,7 +30,8 @@ public:
 
     void Reset();
 
-    void DoSavestate(Savestate* file);
+    [[deprecated]] void DoSavestate(Savestate* file);
+    void SaveState(SavestateWriter& writer);
 
     void WriteCnt(u32 val);
     void Start();

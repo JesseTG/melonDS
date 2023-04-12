@@ -370,6 +370,57 @@ void DoSavestate(Savestate* file)
     ResetVRAMCache();
 }
 
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("GPUG");
+
+    writer.Var16(VCount);
+    writer.Var32(NextVCount);
+    writer.Var16(TotalScanlines);
+
+    writer.VarArray(DispStat, sizeof(DispStat));
+    writer.VarArray(VMatch, sizeof(VMatch));
+
+    writer.VarArray(Palette, sizeof(Palette));
+    writer.VarArray(OAM, sizeof(OAM));
+
+    writer.VarArray(VRAM_A, sizeof(VRAM_A));
+    writer.VarArray(VRAM_B, sizeof(VRAM_B));
+    writer.VarArray(VRAM_C, sizeof(VRAM_C));
+    writer.VarArray(VRAM_D, sizeof(VRAM_D));
+    writer.VarArray(VRAM_E,  sizeof(VRAM_E));
+    writer.VarArray(VRAM_F,  sizeof(VRAM_F));
+    writer.VarArray(VRAM_G,  sizeof(VRAM_G));
+    writer.VarArray(VRAM_H,  sizeof(VRAM_H));
+    writer.VarArray(VRAM_I,  sizeof(VRAM_I));
+
+    writer.VarArray(VRAMCNT, sizeof(VRAMCNT));
+    writer.Var8(VRAMSTAT);
+
+    writer.Var32(VRAMMap_LCDC);
+
+    writer.VarArray(VRAMMap_ABG, sizeof(VRAMMap_ABG));
+    writer.VarArray(VRAMMap_AOBJ, sizeof(VRAMMap_AOBJ));
+    writer.VarArray(VRAMMap_BBG, sizeof(VRAMMap_BBG));
+    writer.VarArray(VRAMMap_BOBJ, sizeof(VRAMMap_BOBJ));
+
+    writer.VarArray(VRAMMap_ABGExtPal, sizeof(VRAMMap_ABGExtPal));
+    writer.Var32(VRAMMap_AOBJExtPal);
+    writer.VarArray(VRAMMap_BBGExtPal, sizeof(VRAMMap_BBGExtPal));
+    writer.Var32(VRAMMap_BOBJExtPal);
+
+    writer.VarArray(VRAMMap_Texture, sizeof(VRAMMap_Texture));
+    writer.VarArray(VRAMMap_TexPal, sizeof(VRAMMap_TexPal));
+
+    writer.VarArray(VRAMMap_ARM7, sizeof(VRAMMap_ARM7));
+
+    GPU2D_A.SaveState(writer);
+    GPU2D_B.SaveState(writer);
+    GPU3D::SaveState(writer);
+
+    ResetVRAMCache();
+}
+
 void AssignFramebuffers()
 {
     int backbuf = FrontBuffer ? 0 : 1;

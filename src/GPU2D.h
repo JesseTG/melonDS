@@ -35,7 +35,8 @@ public:
 
     void Reset();
 
-    void DoSavestate(Savestate* file);
+    [[deprecated]] void DoSavestate(Savestate* file);
+    void SaveState(SavestateWriter& writer);
 
     void SetEnabled(bool enable) { Enabled = enable; }
 

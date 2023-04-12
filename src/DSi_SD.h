@@ -36,7 +36,8 @@ public:
     void CloseHandles();
     void Reset();
 
-    void DoSavestate(Savestate* file);
+    [[deprecated]] void DoSavestate(Savestate* file);
+    void SaveState(SavestateWriter& writer);
 
     static void FinishRX(u32 param);
     static void FinishTX(u32 param);
@@ -109,7 +110,8 @@ public:
 
     virtual void Reset() = 0;
 
-    virtual void DoSavestate(Savestate* file) = 0;
+    [[deprecated]] virtual void DoSavestate(Savestate* file) = 0;
+    virtual void SaveState(SavestateWriter& writer) = 0;
 
     virtual void SendCMD(u8 cmd, u32 param) = 0;
     virtual void ContinueTransfer() = 0;
@@ -131,7 +133,8 @@ public:
 
     void Reset();
 
-    void DoSavestate(Savestate* file);
+    [[deprecated]] void DoSavestate(Savestate* file);
+    void SaveState(SavestateWriter& writer) override;
 
     void SetCID(u8* cid) { memcpy(CID, cid, 16); }
 

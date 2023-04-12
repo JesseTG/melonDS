@@ -46,7 +46,8 @@ public:
 
     virtual void Reset();
 
-    virtual void DoSavestate(Savestate* file);
+    [[deprecated]] virtual void DoSavestate(Savestate* file);
+    virtual void SaveState(SavestateWriter& writer);
 
     virtual void FillPipeline() = 0;
 
@@ -173,7 +174,8 @@ public:
 
     void Reset();
 
-    void DoSavestate(Savestate* file);
+    [[deprecated]] void DoSavestate(Savestate* file);
+    void SaveState(SavestateWriter& writer) override;
 
     void UpdateRegionTimings(u32 addrstart, u32 addrend);
 
@@ -243,7 +245,8 @@ public:
     void GetCodeMemRegion(u32 addr, NDS::MemRegion* region);
 
     void CP15Reset();
-    void CP15DoSavestate(Savestate* file);
+    [[deprecated]] void CP15DoSavestate(Savestate* file);
+    void CP15SaveState(SavestateWriter& writer) const;
 
     void UpdateDTCMSetting();
     void UpdateITCMSetting();

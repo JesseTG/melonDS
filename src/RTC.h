@@ -28,7 +28,9 @@ namespace RTC
 bool Init();
 void DeInit();
 void Reset();
-void DoSavestate(Savestate* file);
+[[deprecated]] void DoSavestate(Savestate* file);
+void SaveState(SavestateWriter& writer);
+void LoadState(SavestateReader& reader);
 
 u16 Read();
 void Write(u16 val, bool byte);

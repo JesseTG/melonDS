@@ -49,7 +49,7 @@ u16 DSP_REP[3];
 u64 DSPTimestamp;
 
 FIFO<u16, 16> PDATAReadFifo/*, *PDATAWriteFifo*/;
-int PDataDMALen = 0;
+s32 PDataDMALen = 0;
 
 constexpr u32 DataMemoryOffset = 0x20000; // from Teakra memory_interface.h
 // NOTE: ^ IS IN DSP WORDS, NOT IN BYTES!
@@ -604,6 +604,28 @@ void DoSavestate(Savestate* file)
     file->Var16(&DSP_REP[1]);
     file->Var16(&DSP_REP[2]);
     file->Var8((u8*)&SCFG_RST);
+
+    // TODO: save the Teakra state!!!
+}
+
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("DSPi");
+
+    PDATAReadFifo.SaveState(writer);
+
+    writer.Var64(DSPTimestamp);
+    writer.Var(PDataDMALen);
+
+    writer.Var16(DSP_PADR);
+    writer.Var16(DSP_PCFG);
+    writer.Var16(DSP_PSTS);
+    writer.Var16(DSP_PSEM);
+    writer.Var16(DSP_PMASK);
+    writer.Var16(DSP_PCLEAR);
+    writer.VarArray(DSP_CMD, sizeof(DSP_CMD));
+    writer.VarArray(DSP_REP, sizeof(DSP_REP));
+    writer.Var8(SCFG_RST);
 
     // TODO: save the Teakra state!!!
 }

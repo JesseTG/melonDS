@@ -191,6 +191,58 @@ void Unit::DoSavestate(Savestate* file)
     file->Var32(&Win1Active);
 }
 
+
+void Unit::SaveState(SavestateWriter& writer)
+{
+    writer.Section((char*)(Num ? "GP2B" : "GP2A"));
+
+    writer.Var32(DispCnt);
+    writer.VarArray(BGCnt, sizeof(BGCnt));
+    writer.VarArray(BGXPos, sizeof(BGXPos));
+    writer.VarArray(BGYPos, sizeof(BGYPos));
+    writer.VarArray(BGXRef, sizeof(BGXRef));
+    writer.VarArray(BGYRef, sizeof(BGYRef));
+    writer.VarArray(BGXRefInternal, sizeof(BGXRefInternal));
+    writer.VarArray(BGYRefInternal, sizeof(BGYRefInternal));
+    writer.VarArray(BGRotA, sizeof(BGRotA));
+    writer.VarArray(BGRotB, sizeof(BGRotB));
+    writer.VarArray(BGRotC, sizeof(BGRotC));
+    writer.VarArray(BGRotD, sizeof(BGRotD));
+
+    writer.VarArray(Win0Coords, sizeof(Win0Coords));
+    writer.VarArray(Win1Coords, sizeof(Win1Coords));
+    writer.VarArray(WinCnt, sizeof(WinCnt));
+
+    writer.VarArray(BGMosaicSize, sizeof(BGMosaicSize));
+    writer.VarArray(OBJMosaicSize, sizeof(OBJMosaicSize));
+    writer.Var8(BGMosaicY);
+    writer.Var8(BGMosaicYMax);
+    writer.Var8(OBJMosaicY);
+    writer.Var8(OBJMosaicYMax);
+
+    writer.Var16(BlendCnt);
+    writer.Var16(BlendAlpha);
+    writer.Var8(EVA);
+    writer.Var8(EVB);
+    writer.Var8(EVY);
+
+    writer.Var16(MasterBrightness);
+
+    if (!Num)
+    {
+        writer.VarArray(DispFIFO, sizeof(DispFIFO));
+        writer.Var32(DispFIFOReadPtr);
+        writer.Var32(DispFIFOWritePtr);
+
+        writer.VarArray(DispFIFOBuffer, sizeof(DispFIFOBuffer));
+
+        writer.Var32(CaptureCnt);
+    }
+
+    writer.Var32(Win0Active);
+    writer.Var32(Win1Active);
+}
+
 u8 Unit::Read8(u32 addr)
 {
     switch (addr & 0x00000FFF)

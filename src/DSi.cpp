@@ -258,6 +258,35 @@ void DoSavestate(Savestate* file)
     SDIO->DoSavestate(file);
 }
 
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("DSIG");
+
+    writer.Var16(SCFG_BIOS);
+    writer.Var16(SCFG_Clock9);
+    writer.Var16(SCFG_Clock7);
+    writer.VarArray(SCFG_EXT, sizeof(SCFG_EXT));
+    writer.Var32(SCFG_MC);
+    writer.Var16(SCFG_RST);
+
+    //writer.VarArray(ARM9iBIOS, 0x10000);
+    //writer.VarArray(ARM7iBIOS, 0x10000);
+
+    writer.VarArray(&MBK[0][0], sizeof(u32)*8);
+    writer.VarArray(&MBK[1][5], sizeof(u32)*3);
+    writer.Var32(MBK[0][8]);
+
+    for (DSi_NDMA* n : NDMAs)
+        n->SaveState(writer);
+
+    DSi_AES::SaveState(writer);
+    DSi_CamModule::SaveState(writer);
+    DSi_DSP::SaveState(writer);
+    DSi_I2C::SaveState(writer);
+    SDMMC->SaveState(writer);
+    SDIO->SaveState(writer);
+}
+
 void SetCartInserted(bool inserted)
 {
     if (inserted)

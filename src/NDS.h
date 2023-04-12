@@ -228,7 +228,9 @@ void Reset();
 void Start();
 void Stop();
 
-bool DoSavestate(Savestate* file);
+[[deprecated("Use LoadState or SaveState instead")]] bool DoSavestate(Savestate* file);
+bool SaveState(Savestate& state);
+bool LoadState(const Savestate& state);
 
 void SetARM9RegionTimings(u32 addrstart, u32 addrend, u32 region, int buswidth, int nonseq, int seq);
 void SetARM7RegionTimings(u32 addrstart, u32 addrend, u32 region, int buswidth, int nonseq, int seq);

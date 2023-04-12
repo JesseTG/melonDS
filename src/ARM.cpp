@@ -256,12 +256,52 @@ void ARM::DoSavestate(Savestate* file)
     }
 }
 
+void ARM::SaveState(SavestateWriter& writer)
+{
+    writer.Section((char*)(Num ? "ARM7" : "ARM9"));
+
+    writer.Var(Cycles);
+    //file->Var32((u32*)&CyclesToRun);
+
+    // hack to make save states compatible
+    u32 halted = Halted;
+    writer.Var32(halted);
+    Halted = halted;
+
+    writer.VarArray(R, sizeof(R));
+    writer.Var32(CPSR);
+    writer.VarArray(R_FIQ, sizeof(R_FIQ));
+    writer.VarArray(R_SVC, sizeof(R_SVC));
+    writer.VarArray(R_ABT, sizeof(R_ABT));
+    writer.VarArray(R_IRQ, sizeof(R_IRQ));
+    writer.VarArray(R_UND, sizeof(R_UND));
+    writer.Var32(CurInstr);
+
+#ifdef JIT_ENABLED
+    if (NDS::EnableJIT)
+    {
+        // hack, the JIT doesn't really pipeline
+        // but we still want JIT save states to be
+        // loaded while running the interpreter
+        FillPipeline();
+    }
+#endif
+    writer.VarArray(NextInstr, sizeof(NextInstr));
+
+    writer.Var32(ExceptionBase);
+}
+
 void ARMv5::DoSavestate(Savestate* file)
 {
     ARM::DoSavestate(file);
     CP15DoSavestate(file);
 }
 
+void ARMv5::SaveState(SavestateWriter& writer)
+{
+    ARM::SaveState(writer);
+    CP15SaveState(writer);
+}
 
 void ARM::SetupCodeMem(u32 addr)
 {

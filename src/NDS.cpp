@@ -182,6 +182,35 @@ void UpdateWifiTimings();
 void SetWifiWaitCnt(u16 val);
 void SetGBASlotTimings();
 
+// this is a bit of a hack
+// but uh, your local coder realized that the scheduler list contains function pointers
+// and that storing those as-is is not a very good idea
+// unless you want it to crash and burn
+
+// this is the solution your local coder came up with.
+// it's gross but I think it's the best solution for this problem.
+// just remember to add here if you add more event callbacks, kay?
+// atleast until we come up with something more elegant.
+const std::array EventFunctions
+{
+    GPU::StartScanline, GPU::StartHBlank, GPU::FinishFrame,
+    SPU::Mix,
+    Wifi::USTimer,
+
+    GPU::DisplayFIFO,
+    NDSCart::ROMPrepareData, NDSCart::ROMEndTransfer,
+    NDSCart::SPITransferDone,
+    SPI::TransferDone,
+    DivDone,
+    SqrtDone,
+
+    DSi_SDHost::FinishRX,
+    DSi_SDHost::FinishTX,
+    DSi_NWifi::MSTimer,
+    DSi_CamModule::IRQ,
+    DSi_CamModule::TransferScanline,
+    DSi_DSP::DSPCatchUpU32,
+};
 
 bool Init()
 {
@@ -702,7 +731,7 @@ void Stop()
         DSi::Stop();
 }
 
-bool DoSavestate_Scheduler(Savestate* file)
+[[deprecated]] bool DoSavestate_Scheduler(Savestate* file)
 {
     // this is a bit of a hack
     // but uh, your local coder realized that the scheduler list contains function pointers
@@ -798,6 +827,37 @@ bool DoSavestate_Scheduler(Savestate* file)
         }
     }
 
+    return true;
+}
+
+bool SaveState_Scheduler(SavestateWriter& writer)
+{
+    for (int i = 0; i < Event_MAX; i++)
+    {
+        SchedEvent* evt = &SchedList[i];
+
+        u32 funcid = 0xFFFFFFFF;
+        if (evt->Func)
+        {
+            for (int j = 0; EventFunctions[j]; j++)
+            {
+                if (evt->Func == EventFunctions[j])
+                {
+                    funcid = j;
+                    break;
+                }
+            }
+            if (funcid == 0xFFFFFFFF)
+            {
+                Log(LogLevel::Error, "savestate: VERY BAD!!!!! FUNCTION POINTER FOR EVENT %d NOT IN HACKY LIST. CANNOT SAVE. SMACK ARISOTURA.\n", i);
+                return false;
+            }
+        }
+
+        writer.Var32(funcid);
+        writer.Var64(evt->Timestamp);
+        writer.Var32(evt->Param);
+    }
     return true;
 }
 
@@ -938,6 +998,109 @@ bool DoSavestate(Savestate* file)
 #endif
 
     file->Finish();
+
+    return true;
+}
+
+bool SaveState(Savestate& file)
+{
+    SavestateWriter writer(&file);
+    writer.Section("NDSG");
+
+    u32 console = ConsoleType;
+    writer.Var32(console);
+
+    writer.VarArray(MainRAM, MainRAMMaxSize);
+    writer.VarArray(SharedWRAM, SharedWRAMSize);
+    writer.VarArray(ARM7WRAM, ARM7WRAMSize);
+
+    //file->VarArray(ARM9BIOS, 0x1000);
+    //file->VarArray(ARM7BIOS, 0x4000);
+
+    writer.VarArray(ExMemCnt, sizeof(ExMemCnt));
+    writer.VarArray(ROMSeed0, sizeof(ROMSeed0));
+    writer.VarArray(ROMSeed1, sizeof(ROMSeed1));
+
+    writer.Var16(WifiWaitCnt);
+
+    writer.VarArray(IME, sizeof(IME));
+    writer.VarArray(IE, sizeof(IE));
+    writer.VarArray(IF, sizeof(IF));
+    writer.Var32(IE2);
+    writer.Var32(IF2);
+
+    writer.Var8(PostFlag9);
+    writer.Var8(PostFlag7);
+    writer.Var16(PowerControl9);
+    writer.Var16(PowerControl7);
+
+    writer.Var16(ARM7BIOSProt);
+
+    writer.Var16(IPCSync9);
+    writer.Var16(IPCSync7);
+    writer.Var16(IPCFIFOCnt9);
+    writer.Var16(IPCFIFOCnt7);
+    IPCFIFO9.SaveState(writer);
+    IPCFIFO7.SaveState(writer);
+
+    writer.Var16(DivCnt);
+    writer.Var16(SqrtCnt);
+
+    writer.Var32(CPUStop);
+
+    for (const Timer& timer : Timers)
+    {
+        writer.Var16(timer.Reload);
+        writer.Var16(timer.Cnt);
+        writer.Var32(timer.Counter);
+        writer.Var32(timer.CycleShift);
+    }
+
+    writer.VarArray(TimerCheckMask, sizeof(TimerCheckMask));
+    writer.VarArray(TimerTimestamp, sizeof(TimerTimestamp));
+
+    writer.VarArray(DMA9Fill, sizeof(DMA9Fill));
+
+    if (!SaveState_Scheduler(writer)) return false;
+    writer.Var32(SchedListMask);
+    writer.Var64(ARM9Timestamp);
+    writer.Var64(ARM9Target);
+    writer.Var64(ARM7Timestamp);
+    writer.Var64(ARM7Target);
+    writer.Var64(SysTimestamp);
+    writer.Var64(LastSysClockCycles);
+    writer.Var64(FrameStartTimestamp);
+    writer.Var32(NumFrames);
+    writer.Var32(NumLagFrames);
+    writer.Bool32(LagFrameFlag);
+
+    // TODO: save KeyInput????
+    writer.Var16(KeyCnt);
+    writer.Var16(RCnt);
+
+    writer.Var8(WRAMCnt);
+
+    writer.Bool32(RunningGame);
+
+    for (DMA* DMA : DMAs)
+        DMA->SaveState(writer);
+
+    ARM9->SaveState(writer);
+    ARM7->SaveState(writer);
+
+    NDSCart::SaveState(writer);
+    if (ConsoleType == 0)
+        GBACart::SaveState(writer);
+    GPU::SaveState(writer);
+    SPU::SaveState(writer);
+    SPI::SaveState(writer);
+    RTC::SaveState(writer);
+    Wifi::SaveState(writer);
+
+    if (ConsoleType == 1)
+        DSi::SaveState(writer);
+
+    writer.Finish();
 
     return true;
 }

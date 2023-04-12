@@ -69,6 +69,11 @@ void CartCommon::DoSavestate(Savestate* file)
     file->Section("GBCS");
 }
 
+void CartCommon::SaveState(SavestateWriter& writer)
+{
+    writer.Section("GBCS");
+}
+
 void CartCommon::SetupSave(u32 type)
 {
 }
@@ -183,6 +188,48 @@ void CartGame::DoSavestate(Savestate* file)
 
     if ((!file->Saving()) && SRAM)
         Platform::WriteGBASave(SRAM, SRAMLength, 0, SRAMLength);
+}
+
+void CartGame::SaveState(SavestateWriter& writer)
+{
+    CartCommon::SaveState(writer);
+
+    writer.Var16(GPIO.control);
+    writer.Var16(GPIO.data);
+    writer.Var16(GPIO.direction);
+
+    u32 oldlen = SRAMLength;
+
+    writer.Var32(SRAMLength);
+
+    if (SRAMLength != oldlen)
+    {
+        // reallocate save memory
+        if (oldlen) delete[] SRAM;
+        SRAM = nullptr;
+        if (SRAMLength) SRAM = new u8[SRAMLength];
+    }
+    if (SRAMLength)
+    {
+        // fill save memory if data is present
+        writer.VarArray(SRAM, SRAMLength);
+    }
+    else
+    {
+        // no save data, clear the current state
+        SRAMType = SaveType::S_NULL;
+        SRAM = nullptr;
+        return;
+    }
+
+    // persist some extra state info
+    writer.Var8(SRAMFlashState.bank);
+    writer.Var8(SRAMFlashState.cmd);
+    writer.Var8(SRAMFlashState.device);
+    writer.Var8(SRAMFlashState.manufacturer);
+    writer.Var8(SRAMFlashState.state);
+
+    writer.Var8(SRAMType);
 }
 
 void CartGame::SetupSave(u32 type)
@@ -577,6 +624,16 @@ void CartGameSolarSensor::DoSavestate(Savestate* file)
     file->Var8(&LightLevel);
 }
 
+void CartGameSolarSensor::SaveState(SavestateWriter& writer)
+{
+    CartGame::SaveState(writer);
+
+    writer.Var8(LightEdge);
+    writer.Var8(LightCounter);
+    writer.Var8(LightSample);
+    writer.Var8(LightLevel);
+}
+
 int CartGameSolarSensor::SetInput(int num, bool pressed)
 {
     if (!pressed) return -1;
@@ -641,6 +698,14 @@ void CartRAMExpansion::DoSavestate(Savestate* file)
 
     file->VarArray(RAM, sizeof(RAM));
     file->Var16(&RAMEnable);
+}
+
+void CartRAMExpansion::SaveState(SavestateWriter& writer)
+{
+    CartCommon::SaveState(writer);
+
+    writer.VarArray(RAM, sizeof(RAM));
+    writer.Var16(RAMEnable);
 }
 
 u16 CartRAMExpansion::ROMRead(u32 addr)
@@ -754,6 +819,27 @@ void DoSavestate(Savestate* file)
     }
 
     if (Cart) Cart->DoSavestate(file);
+}
+
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("GBAC"); // Game Boy Advance Cartridge
+
+    // little state here
+    // no need to save OpenBusDecay, it will be set later
+
+    u32 carttype = 0;
+    u32 cartchk = 0;
+    if (Cart)
+    {
+        carttype = Cart->Type();
+        cartchk = Cart->Checksum();
+    }
+
+    writer.Var32(carttype);
+    writer.Var32(cartchk);
+
+    if (Cart) Cart->SaveState(writer);
 }
 
 bool LoadROM(const u8* romdata, u32 romlen)

@@ -631,7 +631,179 @@ void DoSavestate(Savestate* file)
     file->Bool32(&AbortFrame);
 }
 
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("GP3D");
 
+    CmdFIFO.SaveState(writer);
+    CmdPIPE.SaveState(writer);
+
+    writer.Var32(NumCommands);
+    writer.Var32(CurCommand);
+    writer.Var32(ParamCount);
+    writer.Var32(TotalParams);
+
+    writer.Var32(NumPushPopCommands);
+    writer.Var32(NumTestCommands);
+
+    writer.Var32(DispCnt);
+    writer.Var8(AlphaRefVal);
+    writer.Var8(AlphaRef);
+
+    writer.VarArray(ToonTable, sizeof(ToonTable));
+    writer.VarArray(EdgeTable, sizeof(EdgeTable));
+
+    writer.Var32(FogColor);
+    writer.Var32(FogOffset);
+    writer.VarArray(FogDensityTable, sizeof(FogDensityTable));
+
+    writer.Var32(ClearAttr1);
+    writer.Var32(ClearAttr2);
+
+    writer.Var32(RenderDispCnt);
+    writer.Var8(RenderAlphaRef);
+
+    writer.VarArray(RenderToonTable, sizeof(RenderToonTable));
+    writer.VarArray(RenderEdgeTable, sizeof(RenderEdgeTable));
+
+    writer.Var32(RenderFogColor);
+    writer.Var32(RenderFogOffset);
+    writer.Var32(RenderFogShift);
+    writer.VarArray(RenderFogDensityTable, sizeof(RenderFogDensityTable));
+
+    writer.Var32(RenderClearAttr1);
+    writer.Var32(RenderClearAttr2);
+
+    writer.Var16(RenderXPos);
+
+    writer.Var32(ZeroDotWLimit);
+
+    writer.Var32(GXStat);
+
+    writer.VarArray(ExecParams, sizeof(ExecParams));
+    writer.Var32(ExecParamCount);
+    writer.Var(CycleCount);
+    writer.Var64(Timestamp);
+
+    writer.Var32(MatrixMode);
+
+    writer.VarArray(ProjMatrix, sizeof(ProjMatrix));
+    writer.VarArray(PosMatrix, sizeof(PosMatrix));
+    writer.VarArray(VecMatrix, sizeof(VecMatrix));
+    writer.VarArray(TexMatrix, sizeof(TexMatrix));
+
+    writer.VarArray(ProjMatrixStack, sizeof(ProjMatrixStack));
+    writer.VarArray(PosMatrixStack, sizeof(PosMatrixStack));
+    writer.VarArray(VecMatrixStack, sizeof(VecMatrixStack));
+    writer.VarArray(TexMatrixStack, sizeof(TexMatrixStack));
+
+    writer.Var(ProjMatrixStackPointer);
+    writer.Var(PosMatrixStackPointer);
+    writer.Var(TexMatrixStackPointer);
+
+    writer.VarArray(Viewport, sizeof(Viewport));
+
+    writer.VarArray(PosTestResult, sizeof(PosTestResult));
+    writer.VarArray(VecTestResult, sizeof(VecTestResult));
+
+    writer.Var32(VertexNum);
+    writer.Var32(VertexNumInPoly);
+    writer.Var32(NumConsecutivePolygons);
+
+    for (const Vertex& vtx : TempVertexBuffer)
+    {
+        vtx.SaveState(writer);
+    }
+
+    u32 id;
+    if (LastStripPolygon) id = (u32)((LastStripPolygon - (&PolygonRAM[0])) / sizeof(Polygon));
+    else                  id = -1;
+    writer.Var32(id);
+
+    writer.Var32(CurRAMBank);
+    writer.Var32(NumVertices);
+    writer.Var32(NumPolygons);
+    writer.Var32(NumOpaquePolygons);
+
+    writer.Var32(FlushRequest);
+    writer.Var32(FlushAttributes);
+
+    for (const Vertex& vtx : VertexRAM)
+    {
+        vtx.SaveState(writer);
+    }
+
+    for (Polygon& poly : PolygonRAM)
+    {
+        // this is a bit ugly, but eh
+        // we can't save the pointers as-is, that's a bad idea
+        for (int j = 0; j < 10; j++)
+        {
+            Vertex* ptr = poly.Vertices[j];
+            u32 id;
+            if (ptr) id = (u32)((ptr - (&VertexRAM[0])) / sizeof(Vertex));
+            else     id = -1;
+            writer.Var32(id);
+        }
+
+        writer.Var32(poly.NumVertices);
+
+        writer.VarArray(poly.FinalZ, sizeof(poly.FinalZ));
+        writer.VarArray(poly.FinalW, sizeof(poly.FinalW));
+        writer.Bool32(poly.WBuffer);
+
+        writer.Var32(poly.Attr);
+        writer.Var32(poly.TexParam);
+        writer.Var32(poly.TexPalette);
+
+        writer.Bool32(poly.FacingView);
+        writer.Bool32(poly.Translucent);
+
+        writer.Bool32(poly.IsShadowMask);
+        writer.Bool32(poly.IsShadow);
+
+        if (writer.IsAtLeastVersion(4, 1))
+            writer.Var32(poly.Type);
+        else
+            poly.Type = 0;
+
+        writer.Var32(poly.VTop);
+        writer.Var32(poly.VBottom);
+        writer.Var(poly.YTop);
+        writer.Var(poly.YBottom);
+        writer.Var(poly.XTop);
+        writer.Var(poly.XBottom);
+
+        writer.Var32(poly.SortKey);
+    }
+
+    // probably not worth storing the vblank-latched Renderxxxxxx variables
+    CmdStallQueue.SaveState(writer);
+
+    writer.Var(VertexPipeline);
+    writer.Var(NormalPipeline);
+    writer.Var(PolygonPipeline);
+    writer.Var(VertexSlotCounter);
+    writer.Var(VertexSlotsFree);
+
+    writer.VarArray(CurVertex, sizeof(CurVertex));
+    writer.VarArray(VertexColor, sizeof(VertexColor));
+    writer.VarArray(TexCoords, sizeof(TexCoords));
+    writer.VarArray(RawTexCoords, sizeof(RawTexCoords));
+    writer.VarArray(Normal, sizeof(Normal));
+
+    writer.VarArray(LightDirection, sizeof(LightDirection));
+    writer.VarArray(LightColor, sizeof(LightColor));
+    writer.VarArray(MatDiffuse, sizeof(MatDiffuse));
+    writer.VarArray(MatAmbient, sizeof(MatAmbient));
+    writer.VarArray(MatSpecular, sizeof(MatSpecular));
+    writer.VarArray(MatEmission, sizeof(MatEmission));
+
+    writer.Bool32(UseShininessTable);
+    writer.VarArray(ShininessTable, sizeof(ShininessTable));
+
+    writer.Bool32(AbortFrame);
+}
 
 void SetEnabled(bool geometry, bool rendering)
 {

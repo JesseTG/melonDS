@@ -197,6 +197,44 @@ void DSi_SDHost::DoSavestate(Savestate* file)
     if (Ports[1]) Ports[1]->DoSavestate(file);
 }
 
+void DSi_SDHost::SaveState(SavestateWriter& writer)
+{
+    writer.Section(Num ? "SDIO" : "SDMM");
+
+    writer.Var16(PortSelect);
+    writer.Var16(SoftReset);
+    writer.Var16(SDClock);
+    writer.Var16(SDOption);
+
+    writer.Var32(IRQStatus);
+    writer.Var32(IRQMask);
+
+    writer.Var16(CardIRQStatus);
+    writer.Var16(CardIRQMask);
+    writer.Var16(CardIRQCtl);
+
+    writer.Var16(DataCtl);
+    writer.Var16(Data32IRQ);
+    writer.Var32(DataMode);
+    writer.Var16(BlockCount16);
+    writer.Var16(BlockCount32);
+    writer.Var16(BlockCountInternal);
+    writer.Var16(BlockLen16);
+    writer.Var16(BlockLen32);
+    writer.Var16(StopAction);
+
+    writer.Var16(Command);
+    writer.Var32(Param);
+    writer.VarArray(ResponseBuffer, 8);
+
+    writer.Var32(CurFIFO);
+    DataFIFO[0].SaveState(writer);
+    DataFIFO[1].SaveState(writer);
+    DataFIFO32.SaveState(writer);
+
+    if (Ports[0]) Ports[0]->SaveState(writer);
+    if (Ports[1]) Ports[1]->SaveState(writer);
+}
 
 void DSi_SDHost::UpdateData32IRQ()
 {
@@ -846,6 +884,26 @@ void DSi_MMCStorage::DoSavestate(Savestate* file)
     file->Var32(&BlockSize);
     file->Var64(&RWAddress);
     file->Var32(&RWCommand);
+
+    // TODO: what about the file contents?
+}
+
+void DSi_MMCStorage::SaveState(SavestateWriter& writer)
+{
+    writer.Section(Internal ? "NAND" : "SDCR");
+
+    writer.VarArray(CID, sizeof(CID));
+    writer.VarArray(CSD, sizeof(CSD));
+
+    writer.Var32(CSR);
+    writer.Var32(OCR);
+    writer.Var32(RCA);
+    writer.VarArray(SCR, sizeof(SCR));
+    writer.VarArray(SSR, sizeof(SSR));
+
+    writer.Var32(BlockSize);
+    writer.Var64(RWAddress);
+    writer.Var32(RWCommand);
 
     // TODO: what about the file contents?
 }

@@ -46,6 +46,17 @@ struct Vertex
     // TODO maybe: hi-res color? (that survives clipping)
     s32 HiresPosition[2];
 
+    void SaveState(SavestateWriter& writer) const
+    {
+        writer.VarArray(Position, sizeof(Position));
+        writer.VarArray(Color, sizeof(Color));
+        writer.VarArray(TexCoords, sizeof(TexCoords));
+
+        writer.Bool32(Clipped);
+
+        writer.VarArray(FinalPosition, sizeof(FinalPosition));
+        writer.VarArray(FinalColor, sizeof(FinalColor));
+    }
 };
 
 struct Polygon
@@ -105,7 +116,8 @@ bool Init();
 void DeInit();
 void Reset();
 
-void DoSavestate(Savestate* file);
+[[deprecated]] void DoSavestate(Savestate* file);
+void SaveState(SavestateWriter& writer);
 
 void SetEnabled(bool geometry, bool rendering);
 

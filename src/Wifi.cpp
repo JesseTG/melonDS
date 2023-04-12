@@ -82,20 +82,31 @@ struct TXSlot
     u8 CurPhase;
     int CurPhaseTime;
     u32 HalfwordTimeMask;
+
+    void SaveState(SavestateWriter& writer) const
+    {
+        writer.Bool32(Valid);
+        writer.Var16(Addr);
+        writer.Var16(Length);
+        writer.Var8(Rate);
+        writer.Var8(CurPhase);
+        writer.Var(CurPhaseTime);
+        writer.Var32(HalfwordTimeMask);
+    }
 };
 
 TXSlot TXSlots[6];
 
 u8 RXBuffer[2048];
 u32 RXBufferPtr;
-int RXTime;
+s32 RXTime;
 u32 RXHalfwordTimeMask;
 
 u32 ComStatus; // 0=waiting for packets  1=receiving  2=sending
 u32 TXCurSlot;
 u32 RXCounter;
 
-int MPReplyTimer;
+s32 MPReplyTimer;
 u16 MPClientMask, MPClientFail;
 
 u8 MPClientReplies[15*1024];
@@ -103,7 +114,7 @@ u8 MPClientReplies[15*1024];
 bool MPInited;
 bool LANInited;
 
-int USUntilPowerOn;
+s32 USUntilPowerOn;
 bool ForcePowerOn;
 
 // MULTIPLAYER SYNC APPARATUS
@@ -335,6 +346,67 @@ void DoSavestate(Savestate* file)
     file->Bool32(&IsMPClient);
     file->Var64(&NextSync);
     file->Var64(&RXTimestamp);
+}
+
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("WIFI");
+
+    // berp.
+    // not sure we're saving enough shit at all there.
+    // also: savestate and wifi can't fucking work together!!
+    // or it can but you would be disconnected
+
+    writer.VarArray(RAM, sizeof(RAM));
+    writer.VarArray(IO, sizeof(IO));
+
+    writer.Bool32(Enabled);
+    writer.Bool32(PowerOn);
+
+    writer.Var16(Random);
+
+    writer.Var(TimerError);
+
+    writer.VarArray(BBRegs, sizeof(BBRegs));
+    writer.VarArray(BBRegsRO, sizeof(BBRegsRO));
+
+    writer.Var8(RFVersion);
+    writer.VarArray(RFRegs, sizeof(RFRegs));
+
+    writer.Var64(USCounter);
+    writer.Var64(USCompare);
+    writer.Bool32(BlockBeaconIRQ14);
+
+    writer.Var32(CmdCounter);
+
+    writer.Var64(USTimestamp);
+
+    for (const TXSlot& slot : TXSlots)
+    {
+        slot.SaveState(writer);
+    }
+
+    writer.VarArray(RXBuffer, sizeof(RXBuffer));
+    writer.Var32(RXBufferPtr);
+    writer.Var32(RXTime);
+    writer.Var32(RXHalfwordTimeMask);
+
+    writer.Var32(ComStatus);
+    writer.Var32(TXCurSlot);
+    writer.Var32(RXCounter);
+
+    writer.Var(MPReplyTimer);
+    writer.Var16(MPClientMask);
+    writer.Var16(MPClientFail);
+
+    writer.VarArray(MPClientReplies, sizeof(MPClientReplies));
+
+    writer.Var32(USUntilPowerOn);
+    writer.Bool32(ForcePowerOn);
+
+    writer.Bool32(IsMPClient);
+    writer.Var64(NextSync);
+    writer.Var64(RXTimestamp);
 }
 
 

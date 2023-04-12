@@ -42,7 +42,8 @@ public:
     virtual void Reset();
     virtual void SetupDirectBoot(std::string romname);
 
-    virtual void DoSavestate(Savestate* file);
+    [[deprecated]] virtual void DoSavestate(Savestate* file);
+    virtual void SaveState(SavestateWriter& writer);
 
     virtual void SetupSave(u32 type);
     virtual void LoadSave(const u8* savedata, u32 savelen);
@@ -82,7 +83,8 @@ public:
 
     virtual void Reset() override;
 
-    virtual void DoSavestate(Savestate* file) override;
+    [[deprecated]] virtual void DoSavestate(Savestate* file) override;
+    virtual void SaveState(SavestateWriter& writer) override;
 
     virtual void SetupSave(u32 type) override;
     virtual void LoadSave(const u8* savedata, u32 savelen) override;
@@ -122,7 +124,8 @@ public:
 
     void Reset() override;
 
-    void DoSavestate(Savestate* file) override;
+    [[deprecated]] void DoSavestate(Savestate* file) override;
+    void SaveState(SavestateWriter& writer) override;
 
     void LoadSave(const u8* savedata, u32 savelen) override;
 
@@ -152,7 +155,8 @@ public:
 
     void Reset() override;
 
-    void DoSavestate(Savestate* file) override;
+    [[deprecated]] void DoSavestate(Savestate* file) override;
+    void SaveState(SavestateWriter& writer) override;
 
     u8 SPIWrite(u8 val, u32 pos, bool last) override;
 
@@ -172,7 +176,8 @@ public:
 
     void Reset() override;
 
-    void DoSavestate(Savestate* file) override;
+    [[deprecated]] void DoSavestate(Savestate* file) override;
+    void SaveState(SavestateWriter& writer) override;
 
     u8 SPIWrite(u8 val, u32 pos, bool last) override;
 };
@@ -189,7 +194,8 @@ public:
     void Reset() override;
     void SetupDirectBoot(std::string romname) override;
 
-    void DoSavestate(Savestate* file) override;
+    [[deprecated]] void DoSavestate(Savestate* file) override;
+    void SaveState(SavestateWriter& writer) override;
 
     int ROMCommandStart(u8* cmd, u8* data, u32 len) override;
     void ROMCommandFinish(u8* cmd, u8* data, u32 len) override;
@@ -221,7 +227,8 @@ bool Init();
 void DeInit();
 void Reset();
 
-void DoSavestate(Savestate* file);
+[[deprecated]] void DoSavestate(Savestate* file);
+void SaveState(SavestateWriter& writer);
 
 void DecryptSecureArea(u8* out);
 

@@ -186,6 +186,21 @@ void DoSavestate(Savestate* file)
     Capture[1]->DoSavestate(file);
 }
 
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("SPU.");
+
+    writer.Var16(Cnt);
+    writer.Var8(MasterVolume);
+    writer.Var16(Bias);
+
+    for (Channel* c : Channels)
+        c->SaveState(writer);
+
+    Capture[0]->SaveState(writer);
+    Capture[1]->SaveState(writer);
+}
+
 
 void SetPowerCnt(u32 val)
 {
@@ -278,6 +293,39 @@ void Channel::DoSavestate(Savestate* file)
     file->Var32(&FIFOLevel);
     file->VarArray(FIFO, sizeof(FIFO));
 }
+
+void Channel::SaveState(SavestateWriter& writer)
+{
+    writer.Var32(Cnt);
+    writer.Var32(SrcAddr);
+    writer.Var16(TimerReload);
+    writer.Var32(LoopPos);
+    writer.Var32(Length);
+
+    writer.Var8(Volume);
+    writer.Var8(VolumeShift);
+    writer.Var8(Pan);
+
+    writer.Var8(KeyOn);
+    writer.Var32(Timer);
+    writer.Var(Pos);
+    writer.VarArray(PrevSample, sizeof(PrevSample));
+    writer.Var(CurSample);
+    writer.Var16(NoiseVal);
+
+    writer.Var(ADPCMVal);
+    writer.Var(ADPCMIndex);
+    writer.Var(ADPCMValLoop);
+    writer.Var(ADPCMIndexLoop);
+    writer.Var8(ADPCMCurByte);
+
+    writer.Var32(FIFOReadPos);
+    writer.Var32(FIFOWritePos);
+    writer.Var32(FIFOReadOffset);
+    writer.Var32(FIFOLevel);
+    writer.VarArray(FIFO, sizeof(FIFO));
+}
+
 
 void Channel::FIFO_BufferData()
 {
@@ -628,6 +676,23 @@ void CaptureUnit::DoSavestate(Savestate* file)
     file->Var32(&FIFOWriteOffset);
     file->Var32(&FIFOLevel);
     file->VarArray(FIFO, 4*4);
+}
+
+void CaptureUnit::SaveState(SavestateWriter& writer)
+{
+    writer.Var8(Cnt);
+    writer.Var32(DstAddr);
+    writer.Var16(TimerReload);
+    writer.Var32(Length);
+
+    writer.Var32(Timer);
+    writer.Var(Pos);
+
+    writer.Var32(FIFOReadPos);
+    writer.Var32(FIFOWritePos);
+    writer.Var32(FIFOWriteOffset);
+    writer.Var32(FIFOLevel);
+    writer.VarArray(FIFO, sizeof(FIFO));
 }
 
 void CaptureUnit::FIFO_FlushData()

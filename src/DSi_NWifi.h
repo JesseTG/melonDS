@@ -31,7 +31,8 @@ public:
 
     void Reset();
 
-    void DoSavestate(Savestate* file);
+    [[deprecated]] void DoSavestate(Savestate* file);
+    void SaveState(SavestateWriter& writer) override;
 
     void SendCMD(u8 cmd, u32 param);
     void SendACMD(u8 cmd, u32 param);

@@ -35,13 +35,22 @@ public:
     }
 
 
-    void DoSavestate(Savestate* file)
+    [[deprecated]] void DoSavestate(Savestate* file)
     {
         file->Var32(&NumOccupied);
         file->Var32(&ReadPos);
         file->Var32(&WritePos);
 
         file->VarArray(Entries, sizeof(T)*NumEntries);
+    }
+
+    void SaveState(SavestateWriter& writer)
+    {
+        writer.Var32(NumOccupied);
+        writer.Var32(ReadPos);
+        writer.Var32(WritePos);
+
+        writer.VarArray(Entries, sizeof(T)*NumEntries);
     }
 
 
@@ -125,7 +134,7 @@ public:
     }
 
 
-    void DoSavestate(Savestate* file)
+    [[deprecated]] void DoSavestate(Savestate* file)
     {
         file->Var32(&NumOccupied);
         file->Var32(&ReadPos);
@@ -134,6 +143,14 @@ public:
         file->VarArray(Entries, sizeof(T)*NumEntries);
     }
 
+    void SaveState(SavestateWriter& writer)
+    {
+        writer.Var32(NumOccupied);
+        writer.Var32(ReadPos);
+        writer.Var32(WritePos);
+
+        writer.VarArray(Entries, sizeof(T)*NumEntries);
+    }
 
     void Write(T val)
     {

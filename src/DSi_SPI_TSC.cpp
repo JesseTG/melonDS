@@ -85,6 +85,19 @@ void DoSavestate(Savestate* file)
     file->Var8(&TSCMode);
 }
 
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("SPTi");
+
+    writer.Var32(DataPos);
+    writer.Var8(Index);
+    writer.Var8(Bank);
+    writer.Var8(Data);
+
+    writer.VarArray(Bank3Regs, sizeof(Bank3Regs));
+    writer.Var8(TSCMode);
+}
+
 void SetMode(u8 mode)
 {
     TSCMode = mode;

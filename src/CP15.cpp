@@ -102,6 +102,27 @@ void ARMv5::CP15DoSavestate(Savestate* file)
     }
 }
 
+void ARMv5::CP15SaveState(SavestateWriter& writer) const
+{
+    writer.Section("CP15");
+
+    writer.Var32(CP15Control);
+
+    writer.Var32(DTCMSetting);
+    writer.Var32(ITCMSetting);
+
+    writer.VarArray(ITCM, ITCMPhysicalSize);
+    writer.VarArray(DTCM, DTCMPhysicalSize);
+
+    writer.Var32(PU_CodeCacheable);
+    writer.Var32(PU_DataCacheable);
+    writer.Var32(PU_DataCacheWrite);
+
+    writer.Var32(PU_CodeRW);
+    writer.Var32(PU_DataRW);
+
+    writer.VarArray(PU_Region, sizeof(PU_Region));
+}
 
 void ARMv5::UpdateDTCMSetting()
 {

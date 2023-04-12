@@ -29,7 +29,8 @@ void DeInit();
 void Reset();
 void Stop();
 
-void DoSavestate(Savestate* file);
+[[deprecated]] void DoSavestate(Savestate* file);
+void SaveState(SavestateWriter& writer);
 
 void SetPowerCnt(u32 val);
 
@@ -63,7 +64,8 @@ public:
     Channel(u32 num);
     ~Channel();
     void Reset();
-    void DoSavestate(Savestate* file);
+    [[deprecated]] void DoSavestate(Savestate* file);
+    void SaveState(SavestateWriter& writer);
 
     u32 Num;
 
@@ -170,7 +172,8 @@ public:
     CaptureUnit(u32 num);
     ~CaptureUnit();
     void Reset();
-    void DoSavestate(Savestate* file);
+    [[deprecated]] void DoSavestate(Savestate* file);
+    void SaveState(SavestateWriter& writer);
 
     u32 Num;
 

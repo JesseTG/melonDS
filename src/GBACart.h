@@ -37,7 +37,8 @@ public:
 
     virtual void Reset();
 
-    virtual void DoSavestate(Savestate* file);
+    [[deprecated]] virtual void DoSavestate(Savestate* file);
+    virtual void SaveState(SavestateWriter& writer);
 
     virtual void SetupSave(u32 type);
     virtual void LoadSave(const u8* savedata, u32 savelen);
@@ -66,7 +67,8 @@ public:
 
     virtual void Reset() override;
 
-    virtual void DoSavestate(Savestate* file) override;
+    [[deprecated]] virtual void DoSavestate(Savestate* file) override;
+    virtual void SaveState(SavestateWriter& writer) override;
 
     virtual void SetupSave(u32 type) override;
     virtual void LoadSave(const u8* savedata, u32 savelen) override;
@@ -137,7 +139,8 @@ public:
 
     virtual void Reset() override;
 
-    virtual void DoSavestate(Savestate* file) override;
+    [[deprecated]] virtual void DoSavestate(Savestate* file) override;
+    virtual void SaveState(SavestateWriter& writer) override;
 
     virtual int SetInput(int num, bool pressed) override;
 
@@ -163,7 +166,8 @@ public:
 
     void Reset() override;
 
-    void DoSavestate(Savestate* file) override;
+    [[deprecated]] void DoSavestate(Savestate* file) override;
+    void SaveState(SavestateWriter& writer) override;
 
     u16 ROMRead(u32 addr) override;
     void ROMWrite(u32 addr, u16 val) override;
@@ -188,7 +192,8 @@ bool Init();
 void DeInit();
 void Reset();
 
-void DoSavestate(Savestate* file);
+[[deprecated]] void DoSavestate(Savestate* file);
+void SaveState(SavestateWriter& writer);
 
 bool LoadROM(const u8* romdata, u32 romlen);
 void LoadSave(const u8* savedata, u32 savelen);

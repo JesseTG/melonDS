@@ -105,6 +105,29 @@ void DoSavestate(Savestate* file)
     file->Var8(&FreeReg);
 }
 
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("RTC.");
+
+    writer.Var16(IO);
+
+    writer.Var8(Input);
+    writer.Var32(InputBit);
+    writer.Var32(InputPos);
+
+    writer.VarArray(Output, sizeof(Output));
+    writer.Var32(OutputBit);
+    writer.Var32(OutputPos);
+
+    writer.Var8(CurCmd);
+
+    writer.Var8(StatusReg1);
+    writer.Var8(StatusReg2);
+    writer.VarArray(Alarm1, sizeof(Alarm1));
+    writer.VarArray(Alarm2, sizeof(Alarm2));
+    writer.Var8(ClockAdjust);
+    writer.Var8(FreeReg);
+}
 
 u8 BCD(u8 val)
 {

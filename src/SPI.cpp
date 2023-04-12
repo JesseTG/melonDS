@@ -445,7 +445,7 @@ void Reset()
     StatusReg = 0x00;
 }
 
-void DoSavestate(Savestate* file)
+[[deprecated]] void DoSavestate(Savestate* file)
 {
     file->Section("SPFW");
 
@@ -459,6 +459,22 @@ void DoSavestate(Savestate* file)
 
     file->Var8(&StatusReg);
     file->Var32(&Addr);
+}
+
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("SPFW");
+
+    // CHECKME/TODO: trust the firmware to stay the same?????
+    // embedding the whole firmware in the savestate would be derpo tho??
+
+    writer.Var32(Hold);
+    writer.Var8(CurCmd);
+    writer.Var32(DataPos);
+    writer.Var8(Data);
+
+    writer.Var8(StatusReg);
+    writer.Var32(Addr);
 }
 
 void SetupDirectBoot(bool dsi)
@@ -667,7 +683,7 @@ void Reset()
 bool GetBatteryLevelOkay() { return !Registers[1]; }
 void SetBatteryLevelOkay(bool okay) { Registers[1] = okay ? 0x00 : 0x01; }
 
-void DoSavestate(Savestate* file)
+[[deprecated]] void DoSavestate(Savestate* file)
 {
     file->Section("SPPW");
 
@@ -678,6 +694,19 @@ void DoSavestate(Savestate* file)
 
     file->VarArray(Registers, 8);
     file->VarArray(RegMasks, 8); // is that needed??
+}
+
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("SPPW");
+
+    writer.Var32(Hold);
+    writer.Var32(DataPos);
+    writer.Var8(Index);
+    writer.Var8(Data);
+
+    writer.VarArray(Registers, sizeof(Registers));
+    writer.VarArray(RegMasks, sizeof(RegMasks)); // is that needed??
 }
 
 u8 Read()
@@ -767,7 +796,7 @@ void Reset()
     MicBufferLen = 0;
 }
 
-void DoSavestate(Savestate* file)
+[[deprecated]] void DoSavestate(Savestate* file)
 {
     file->Section("SPTS");
 
@@ -776,6 +805,17 @@ void DoSavestate(Savestate* file)
     file->Var8(&Data);
 
     file->Var16(&ConvResult);
+}
+
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("SPTS");
+
+    writer.Var32(DataPos);
+    writer.Var8(ControlByte);
+    writer.Var8(Data);
+
+    writer.Var16(ConvResult);
 }
 
 void SetTouchCoords(u16 x, u16 y)
@@ -916,6 +956,18 @@ void DoSavestate(Savestate* file)
     if (NDS::ConsoleType == 1) DSi_SPI_TSC::DoSavestate(file);
 }
 
+void SaveState(SavestateWriter& writer)
+{
+    writer.Section("SPIG");
+
+    writer.Var16(Cnt);
+    writer.Var32(CurDevice);
+
+    SPI_Firmware::SaveState(writer);
+    SPI_Powerman::SaveState(writer);
+    SPI_TSC::SaveState(writer);
+    if (NDS::ConsoleType == 1) DSi_SPI_TSC::SaveState(writer);
+}
 
 void WriteCnt(u16 val)
 {

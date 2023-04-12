@@ -35,7 +35,8 @@ void DeInit();
 void Reset();
 void Stop();
 
-void DoSavestate(Savestate* file);
+[[deprecated]] void DoSavestate(Savestate* file);
+void SaveState(SavestateWriter& writer);
 
 void IRQ(u32 param);
 
@@ -54,7 +55,8 @@ public:
     Camera(u32 num);
     ~Camera();
 
-    void DoSavestate(Savestate* file);
+    [[deprecated]] void DoSavestate(Savestate* file);
+    void SaveState(SavestateWriter& writer);
 
     void Reset();
     void Stop();

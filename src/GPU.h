@@ -168,7 +168,8 @@ void DeInit();
 void Reset();
 void Stop();
 
-void DoSavestate(Savestate* file);
+[[deprecated]] void DoSavestate(Savestate* file);
+void SaveState(SavestateWriter& writer);
 
 void InitRenderer(int renderer);
 void DeInitRenderer();

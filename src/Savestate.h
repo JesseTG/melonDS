@@ -27,7 +27,7 @@
 #define SAVESTATE_MAJOR 10
 #define SAVESTATE_MINOR 0
 
-enum class SavestateMode {
+enum class [[deprecated]] SavestateMode {
     Load,
     Save,
 };
@@ -69,7 +69,7 @@ public:
 
     [[nodiscard]] bool Error() const { return error; }
 
-    [[nodiscard]] bool Saving() const { return mode == SavestateMode::Save; }
+    [[nodiscard, deprecated]] bool Saving() const { return mode == SavestateMode::Save; }
 
     /// @returns The length of the allocated memory in bytes,
     /// \em not the number of bytes written to it.
@@ -81,29 +81,29 @@ public:
     [[nodiscard]] size_t Length() const { return buffer_offset; }
 
     /// TODO writes a section or advances to this section
-    void Section(const char* magic);
+    [[deprecated]] void Section(const char* magic);
 
-    void Var8(u8* var)
+    [[deprecated]] void Var8(u8* var)
     {
         VarArray(var, sizeof(*var));
     }
 
-    void Var16(u16* var)
+    [[deprecated]] void Var16(u16* var)
     {
         VarArray(var, sizeof(*var));
     }
 
-    void Var32(u32* var)
+    [[deprecated]] void Var32(u32* var)
     {
         VarArray(var, sizeof(*var));
     }
 
-    void Var64(u64* var)
+    [[deprecated]] void Var64(u64* var)
     {
         VarArray(var, sizeof(*var));
     }
 
-    void Bool32(bool* var)
+    [[deprecated]] void Bool32(bool* var)
     {
         // for compatibility
         if (Saving())
@@ -126,7 +126,7 @@ public:
     /// If there is an error, then the state of this buffer is unchanged
     /// except for the ::Error flag.
     /// @param len The size of the buffer given by \c data.
-    void VarArray(void* data, u32 len);
+    [[deprecated]] void VarArray(void* data, u32 len);
 
     /// TODO
     /// intended for writing to disk or copying to another buffer
@@ -143,7 +143,7 @@ public:
     /// and in the current section (if any).
     /// @post Calls to any function do nothing until res
     /// TODO
-    void Finish();
+    [[deprecated]] void Finish();
 
     [[nodiscard]] bool IsAtLeastVersion(u32 major, u32 minor) const
     {
@@ -162,6 +162,151 @@ public:
 private:
     u8* buffer;
     u32 buffer_length;
+    u32 buffer_offset;
+    // Index of the first byte in the current section's header
+    u32 current_section;
+    u32 version_major;
+    u32 version_minor;
+    bool error;
+    SavestateMode mode;
+    bool owned_buffer;
+    bool closed;
+
+    void WriteHeader();
+
+    void CloseCurrentSection();
+};
+
+/// Writes the emulator's state to the provided buffer.
+/// TODO not intended to live for long
+class SavestateWriter final
+{
+public:
+    explicit SavestateWriter(Savestate *state);
+
+    SavestateWriter(u8* buffer, size_t buffer_length);
+
+    void Section(const char* magic);
+
+    template<class T>
+    void Var(T var)
+    {
+        static_assert(!std::is_pointer_v<T>, "Pointers cannot be written to save states (double-check your casts)");
+        VarArray(&var, sizeof(var));
+    }
+
+    void Var8(u8 var)
+    {
+        VarArray(&var, sizeof(var));
+    }
+
+    void Var16(u16 var)
+    {
+        VarArray(&var, sizeof(var));
+    }
+
+    void Var32(u32 var)
+    {
+        VarArray(&var, sizeof(var));
+    }
+
+    void Var64(u64 var)
+    {
+        VarArray(&var, sizeof(var));
+    }
+
+    void Bool32(bool var)
+    {
+        // for compatibility
+        u32 val = var;
+        Var32(val);
+    }
+
+    void VarArray(const void* data, u32 len);
+
+    [[nodiscard]] bool IsAtLeastVersion(u32 major, u32 minor) const
+    {
+        if (version_major > major) return true;
+        if (version_major == major && version_minor >= minor) return true;
+        return false;
+    }
+
+    void Finish();
+
+private:
+    Savestate* state;
+    u32 buffer_offset;
+    // Index of the first byte in the current section's header
+    u32 current_section;
+    u32 version_major;
+    u32 version_minor;
+    bool error;
+    SavestateMode mode;
+    bool owned_buffer;
+    bool closed;
+
+    void WriteHeader();
+
+    void CloseCurrentSection();
+};
+
+class SavestateReader final
+{
+public:
+    explicit SavestateReader(const Savestate *state);
+
+    SavestateReader(u8* buffer, size_t buffer_length);
+
+    void Section(const char* magic);
+
+    template<class T>
+    void Var(T& var)
+    {
+        static_assert(!std::is_pointer_v<T>, "Pointers cannot be read from save states (double-check your casts)");
+        VarArray(&var, sizeof(var));
+    }
+
+    void Var8(u8& var)
+    {
+        VarArray(&var, sizeof(var));
+    }
+
+    void Var16(u16& var)
+    {
+        VarArray(&var, sizeof(var));
+    }
+
+    void Var32(u32& var)
+    {
+        VarArray(&var, sizeof(var));
+    }
+
+    void Var64(u64& var)
+    {
+        VarArray(&var, sizeof(var));
+    }
+
+    void Bool32(bool& var)
+    {
+        // for compatibility
+        u32 val;
+        Var32(val);
+        var = val != 0;
+    }
+
+    void VarArray(void* data, u32 len);
+
+    [[nodiscard]] bool IsAtLeastVersion(u32 major, u32 minor) const
+    {
+        if (version_major > major) return true;
+        if (version_major == major && version_minor >= minor) return true;
+        return false;
+    }
+
+    void Finish();
+
+private:
+    Savestate* state;
     u32 buffer_offset;
     // Index of the first byte in the current section's header
     u32 current_section;
