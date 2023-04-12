@@ -861,6 +861,37 @@ bool SaveState_Scheduler(SavestateWriter& writer)
     return true;
 }
 
+bool LoadState_Scheduler(SavestateReader& reader)
+{
+    for (SchedEvent & evt : SchedList)
+    {
+        u32 funcid;
+        reader.Var32(funcid);
+
+        if (funcid != 0xFFFFFFFF)
+        {
+            for (int j = 0; ; j++)
+            {
+                if (!EventFunctions[j])
+                {
+                    Log(LogLevel::Error, "savestate: VERY BAD!!!!!! EVENT FUNCTION POINTER ID %d IS OUT OF RANGE. HAX?????\n", j);
+                    return false;
+                }
+                if (j == funcid) break;
+            }
+
+            evt.Func = EventFunctions[funcid];
+        }
+        else
+            evt.Func = nullptr;
+
+        reader.Var64(evt.Timestamp);
+        reader.Var32(evt.Param);
+    }
+
+    return true;
+}
+
 bool DoSavestate(Savestate* file)
 {
     file->Section("NDSG");
@@ -1101,6 +1132,129 @@ bool SaveState(Savestate& file)
         DSi::SaveState(writer);
 
     writer.Finish();
+
+    return true;
+}
+
+bool LoadState(const Savestate& state)
+{
+    SavestateReader reader(&state);
+    reader.Section("NDSG");
+
+    u32 console;
+    reader.Var32(console);
+    if (console != ConsoleType)
+        return false;
+
+    reader.VarArray(MainRAM, MainRAMMaxSize);
+    reader.VarArray(SharedWRAM, SharedWRAMSize);
+    reader.VarArray(ARM7WRAM, ARM7WRAMSize);
+
+    //reader.VarArray(ARM9BIOS, 0x1000);
+    //reader.VarArray(ARM7BIOS, 0x4000);
+
+    reader.VarArray(ExMemCnt, sizeof(ExMemCnt));
+    reader.VarArray(ROMSeed0, 2*8);
+    reader.VarArray(ROMSeed1, 2*8);
+
+    reader.Var16(WifiWaitCnt);
+
+    reader.VarArray(IME, sizeof(IME));
+    reader.VarArray(IE, sizeof(IE));
+    reader.VarArray(IF, sizeof(IF));
+    reader.Var32(IE2);
+    reader.Var32(IF2);
+
+    reader.Var8(PostFlag9);
+    reader.Var8(PostFlag7);
+    reader.Var16(PowerControl9);
+    reader.Var16(PowerControl7);
+
+    reader.Var16(ARM7BIOSProt);
+
+    reader.Var16(IPCSync9);
+    reader.Var16(IPCSync7);
+    reader.Var16(IPCFIFOCnt9);
+    reader.Var16(IPCFIFOCnt7);
+    IPCFIFO9.LoadState(reader);
+    IPCFIFO7.LoadState(reader);
+
+    reader.Var16(DivCnt);
+    reader.Var16(SqrtCnt);
+
+    reader.Var32(CPUStop);
+
+    for (Timer& timer: Timers)
+    {
+        reader.Var16(timer.Reload);
+        reader.Var16(timer.Cnt);
+        reader.Var32(timer.Counter);
+        reader.Var32(timer.CycleShift);
+    }
+    reader.VarArray(TimerCheckMask, sizeof(TimerCheckMask));
+    reader.VarArray(TimerTimestamp, sizeof(TimerTimestamp));
+
+    reader.VarArray(DMA9Fill, sizeof(DMA9Fill));
+
+    if (!LoadState_Scheduler(reader)) return false;
+    reader.Var32(SchedListMask);
+    reader.Var64(ARM9Timestamp);
+    reader.Var64(ARM9Target);
+    reader.Var64(ARM7Timestamp);
+    reader.Var64(ARM7Target);
+    reader.Var64(SysTimestamp);
+    reader.Var64(LastSysClockCycles);
+    reader.Var64(FrameStartTimestamp);
+    reader.Var32(NumFrames);
+    reader.Var32(NumLagFrames);
+    reader.Bool32(LagFrameFlag);
+
+    // TODO: save KeyInput????
+    reader.Var16(KeyCnt);
+    reader.Var16(RCnt);
+
+    reader.Var8(WRAMCnt);
+
+    reader.Bool32(RunningGame);
+
+    // 'dept of redundancy dept'
+    // but we do need to update the mappings
+    MapSharedWRAM(WRAMCnt);
+
+    InitTimings();
+    SetGBASlotTimings();
+
+    UpdateWifiTimings();
+
+    for (DMA* DMA : DMAs)
+        DMA->LoadState(reader);
+
+    ARM9->LoadState(reader);
+    ARM7->LoadState(reader);
+
+    NDSCart::LoadState(reader);
+    if (ConsoleType == 0)
+        GBACart::LoadState(reader);
+    GPU::LoadState(reader);
+    SPU::LoadState(reader);
+    SPI::LoadState(reader);
+    RTC::LoadState(reader);
+    Wifi::LoadState(reader);
+
+    if (ConsoleType == 1)
+        DSi::LoadState(reader);
+
+    GPU::SetPowerCnt(PowerControl9);
+
+    SPU::SetPowerCnt(PowerControl7 & 0x0001);
+    Wifi::SetPowerCnt(PowerControl7 & 0x0002);
+
+#ifdef JIT_ENABLED
+    ARMJIT::ResetBlockCache();
+    ARMJIT_Memory::Reset();
+#endif
+
+    reader.Finish();
 
     return true;
 }

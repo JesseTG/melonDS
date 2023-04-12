@@ -44,6 +44,7 @@ public:
 
     [[deprecated]] virtual void DoSavestate(Savestate* file);
     virtual void SaveState(SavestateWriter& writer);
+    virtual void LoadState(SavestateReader& reader);
 
     virtual void SetupSave(u32 type);
     virtual void LoadSave(const u8* savedata, u32 savelen);
@@ -85,6 +86,7 @@ public:
 
     [[deprecated]] virtual void DoSavestate(Savestate* file) override;
     virtual void SaveState(SavestateWriter& writer) override;
+    virtual void LoadState(SavestateReader& reader) override;
 
     virtual void SetupSave(u32 type) override;
     virtual void LoadSave(const u8* savedata, u32 savelen) override;
@@ -126,6 +128,7 @@ public:
 
     [[deprecated]] void DoSavestate(Savestate* file) override;
     void SaveState(SavestateWriter& writer) override;
+    void LoadState(SavestateReader& reader) override;
 
     void LoadSave(const u8* savedata, u32 savelen) override;
 
@@ -157,6 +160,7 @@ public:
 
     [[deprecated]] void DoSavestate(Savestate* file) override;
     void SaveState(SavestateWriter& writer) override;
+    void LoadState(SavestateReader& reader) override;
 
     u8 SPIWrite(u8 val, u32 pos, bool last) override;
 
@@ -178,6 +182,7 @@ public:
 
     [[deprecated]] void DoSavestate(Savestate* file) override;
     void SaveState(SavestateWriter& writer) override;
+    void LoadState(SavestateReader& reader) override;
 
     u8 SPIWrite(u8 val, u32 pos, bool last) override;
 };
@@ -196,6 +201,7 @@ public:
 
     [[deprecated]] void DoSavestate(Savestate* file) override;
     void SaveState(SavestateWriter& writer) override;
+    void LoadState(SavestateReader& reader) override;
 
     int ROMCommandStart(u8* cmd, u8* data, u32 len) override;
     void ROMCommandFinish(u8* cmd, u8* data, u32 len) override;
@@ -229,6 +235,7 @@ void Reset();
 
 [[deprecated]] void DoSavestate(Savestate* file);
 void SaveState(SavestateWriter& writer);
+void LoadState(SavestateReader& reader);
 
 void DecryptSecureArea(u8* out);
 

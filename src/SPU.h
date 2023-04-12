@@ -31,6 +31,7 @@ void Stop();
 
 [[deprecated]] void DoSavestate(Savestate* file);
 void SaveState(SavestateWriter& writer);
+void LoadState(SavestateReader& reader);
 
 void SetPowerCnt(u32 val);
 
@@ -66,6 +67,7 @@ public:
     void Reset();
     [[deprecated]] void DoSavestate(Savestate* file);
     void SaveState(SavestateWriter& writer);
+    void LoadState(SavestateReader& reader);
 
     u32 Num;
 
@@ -174,6 +176,7 @@ public:
     void Reset();
     [[deprecated]] void DoSavestate(Savestate* file);
     void SaveState(SavestateWriter& writer);
+    void LoadState(SavestateReader& reader);
 
     u32 Num;
 

@@ -32,6 +32,7 @@ void DeInit();
 void Reset();
 [[deprecated]] void DoSavestate(Savestate* file);
 void SaveState(SavestateWriter& writer);
+void LoadState(SavestateReader& reader);
 
 // 00=DS-mode 01=normal
 void SetMode(u8 mode);

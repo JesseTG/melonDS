@@ -92,6 +92,14 @@ void SaveState(SavestateWriter& writer)
     writer.Var32(CurPos);
 }
 
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("I2BP");
+
+    reader.VarArray(Registers, sizeof(Registers));
+    reader.Var32(CurPos);
+}
+
 u8 GetBootFlag() { return Registers[0x70]; }
 
 bool GetBatteryCharging() { return Registers[0x20] >> 7; }
@@ -219,6 +227,17 @@ void SaveState(SavestateWriter& writer)
     writer.Var32(Device);
 
     DSi_BPTWL::SaveState(writer);
+}
+
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("I2Ci");
+
+    reader.Var8(Cnt);
+    reader.Var8(Data);
+    reader.Var32(Device);
+
+    DSi_BPTWL::LoadState(reader);
 }
 
 void WriteCnt(u8 val)

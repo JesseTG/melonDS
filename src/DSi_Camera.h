@@ -37,6 +37,7 @@ void Stop();
 
 [[deprecated]] void DoSavestate(Savestate* file);
 void SaveState(SavestateWriter& writer);
+void LoadState(SavestateReader& reader);
 
 void IRQ(u32 param);
 
@@ -57,6 +58,7 @@ public:
 
     [[deprecated]] void DoSavestate(Savestate* file);
     void SaveState(SavestateWriter& writer);
+    void LoadState(SavestateReader& reader);
 
     void Reset();
     void Stop();

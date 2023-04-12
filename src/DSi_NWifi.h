@@ -33,6 +33,7 @@ public:
 
     [[deprecated]] void DoSavestate(Savestate* file);
     void SaveState(SavestateWriter& writer) override;
+    void LoadState(SavestateReader& reader) override;
 
     void SendCMD(u8 cmd, u32 param);
     void SendACMD(u8 cmd, u32 param);

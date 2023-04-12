@@ -477,6 +477,22 @@ void SaveState(SavestateWriter& writer)
     writer.Var32(Addr);
 }
 
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("SPFW");
+
+    // CHECKME/TODO: trust the firmware to stay the same?????
+    // embedding the whole firmware in the savestate would be derpo tho??
+
+    reader.Var32(Hold);
+    reader.Var8(CurCmd);
+    reader.Var32(DataPos);
+    reader.Var8(Data);
+
+    reader.Var8(StatusReg);
+    reader.Var32(Addr);
+}
+
 void SetupDirectBoot(bool dsi)
 {
     if (dsi)
@@ -709,6 +725,19 @@ void SaveState(SavestateWriter& writer)
     writer.VarArray(RegMasks, sizeof(RegMasks)); // is that needed??
 }
 
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("SPPW");
+
+    reader.Var32(Hold);
+    reader.Var32(DataPos);
+    reader.Var8(Index);
+    reader.Var8(Data);
+
+    reader.VarArray(Registers, sizeof(Registers));
+    reader.VarArray(RegMasks, sizeof(RegMasks)); // is that needed??
+}
+
 u8 Read()
 {
     return Data;
@@ -816,6 +845,17 @@ void SaveState(SavestateWriter& writer)
     writer.Var8(Data);
 
     writer.Var16(ConvResult);
+}
+
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("SPTS");
+
+    reader.Var32(DataPos);
+    reader.Var8(ControlByte);
+    reader.Var8(Data);
+
+    reader.Var16(ConvResult);
 }
 
 void SetTouchCoords(u16 x, u16 y)
@@ -967,6 +1007,19 @@ void SaveState(SavestateWriter& writer)
     SPI_Powerman::SaveState(writer);
     SPI_TSC::SaveState(writer);
     if (NDS::ConsoleType == 1) DSi_SPI_TSC::SaveState(writer);
+}
+
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("SPIG");
+
+    reader.Var16(Cnt);
+    reader.Var32(CurDevice);
+
+    SPI_Firmware::LoadState(reader);
+    SPI_Powerman::LoadState(reader);
+    SPI_TSC::LoadState(reader);
+    if (NDS::ConsoleType == 1) DSi_SPI_TSC::LoadState(reader);
 }
 
 void WriteCnt(u16 val)

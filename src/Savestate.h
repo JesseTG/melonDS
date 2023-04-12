@@ -263,6 +263,7 @@ public:
     void Var(T& var)
     {
         static_assert(!std::is_pointer_v<T>, "Pointers cannot be read from save states (double-check your casts)");
+        static_assert(!std::is_reference_v<T>, "References cannot be read from save states");
         VarArray(&var, sizeof(var));
     }
 

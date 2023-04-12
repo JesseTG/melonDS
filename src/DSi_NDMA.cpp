@@ -120,6 +120,35 @@ void DSi_NDMA::SaveState(SavestateWriter& writer)
     writer.Bool32(IsGXFIFODMA);
 }
 
+void DSi_NDMA::LoadState(SavestateReader& reader)
+{
+    char magic[5] = "NDMx";
+    magic[3] = '0' + Num + (CPU*4);
+    reader.Section(magic);
+
+    reader.Var32(SrcAddr);
+    reader.Var32(DstAddr);
+    reader.Var32(TotalLength);
+    reader.Var32(BlockLength);
+    reader.Var32(SubblockTimer);
+    reader.Var32(FillData);
+    reader.Var32(Cnt);
+
+    reader.Var32(StartMode);
+    reader.Var32(CurSrcAddr);
+    reader.Var32(CurDstAddr);
+    reader.Var32(SubblockLength);
+    reader.Var32(RemCount);
+    reader.Var32(IterCount);
+    reader.Var32(TotalRemCount);
+    reader.Var32(SrcAddrInc);
+    reader.Var32(DstAddrInc);
+
+    reader.Var32(Running);
+    reader.Bool32(InProgress);
+    reader.Bool32(IsGXFIFODMA);
+}
+
 void DSi_NDMA::WriteCnt(u32 val)
 {
     u32 oldcnt = Cnt;

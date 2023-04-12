@@ -66,6 +66,7 @@ void DeInit();
 void Reset();
 [[deprecated]] void DoSavestate(Savestate* file);
 void SaveState(SavestateWriter& writer);
+void LoadState(SavestateReader& reader);
 
 void WriteCnt(u16 val);
 

@@ -98,6 +98,19 @@ void SaveState(SavestateWriter& writer)
     writer.Var8(TSCMode);
 }
 
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("SPTi");
+
+    reader.Var32(DataPos);
+    reader.Var8(Index);
+    reader.Var8(Bank);
+    reader.Var8(Data);
+
+    reader.VarArray(Bank3Regs, sizeof(Bank3Regs));
+    reader.Var8(TSCMode);
+}
+
 void SetMode(u8 mode)
 {
     TSCMode = mode;

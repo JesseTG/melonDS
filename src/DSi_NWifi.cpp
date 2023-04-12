@@ -304,6 +304,45 @@ void DSi_NWifi::SaveState(SavestateWriter& writer)
     writer.Var32(ConnectionStatus);
 }
 
+void DSi_NWifi::LoadState(SavestateReader& reader)
+{
+    reader.Section("NWFi");
+
+    for (int i = 0; i < 9; i++)
+        Mailbox[i].LoadState(reader);
+
+    reader.Var8(F0_IRQEnable);
+    reader.Var8(F0_IRQStatus);
+
+    reader.Var8(F1_IRQEnable);
+    reader.Var8(F1_IRQEnable_CPU);
+    reader.Var8(F1_IRQEnable_Error);
+    reader.Var8(F1_IRQEnable_Counter);
+    reader.Var8(F1_IRQStatus);
+    reader.Var8(F1_IRQStatus_CPU);
+    reader.Var8(F1_IRQStatus_Error);
+    reader.Var8(F1_IRQStatus_Counter);
+
+    reader.Var32(WindowData);
+    reader.Var32(WindowReadAddr);
+    reader.Var32(WindowWriteAddr);
+
+    reader.Var32(ROMID);
+    reader.Var32(ChipID);
+    reader.Var32(HostIntAddr);
+
+    reader.VarArray(EEPROM, sizeof(EEPROM));
+    reader.Var32(EEPROMReady);
+
+    reader.Var32(BootPhase);
+
+    reader.Var32(ErrorMask);
+    reader.Var32(ScanTimer);
+
+    reader.Var64(BeaconTimer);
+    reader.Var32(ConnectionStatus);
+}
+
 // CHECKME
 // can IRQ status bits be set when the corresponding IRQs are disabled in the enable register?
 // otherwise, does disabling them clear the status register?

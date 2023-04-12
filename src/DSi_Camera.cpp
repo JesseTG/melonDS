@@ -121,6 +121,21 @@ void SaveState(SavestateWriter& writer)
     Camera1->SaveState(writer);
 }
 
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("CAMi");
+
+    reader.Var16(ModuleCnt);
+    reader.Var16(Cnt);
+
+    /*file->VarArray(FrameBuffer, sizeof(FrameBuffer));
+    file->Var32(&TransferPos);
+    file->Var32(&FrameLength);*/
+
+    Camera0->LoadState(reader);
+    Camera1->LoadState(reader);
+}
+
 void IRQ(u32 param)
 {
     Camera* activecam = nullptr;
@@ -457,6 +472,27 @@ void Camera::SaveState(SavestateWriter& writer)
 
     writer.Var16(MCUAddr);
     writer.VarArray(MCURegs, sizeof(MCURegs));
+}
+
+void Camera::LoadState(SavestateReader& reader)
+{
+    char magic[5] = "CAMx";
+    magic[3] = '0' + Num;
+    reader.Section(magic);
+
+    reader.Var32(DataPos);
+    reader.Var32(RegAddr);
+    reader.Var16(RegData);
+
+    reader.Var16(PLLDiv);
+    reader.Var16(PLLPDiv);
+    reader.Var16(PLLCnt);
+    reader.Var16(ClocksCnt);
+    reader.Var16(StandbyCnt);
+    reader.Var16(MiscCnt);
+
+    reader.Var16(MCUAddr);
+    reader.VarArray(MCURegs, sizeof(MCURegs));
 }
 
 void Camera::Reset()

@@ -129,6 +129,30 @@ void SaveState(SavestateWriter& writer)
     writer.Var8(FreeReg);
 }
 
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("RTC.");
+
+    reader.Var16(IO);
+
+    reader.Var8(Input);
+    reader.Var32(InputBit);
+    reader.Var32(InputPos);
+
+    reader.VarArray(Output, sizeof(Output));
+    reader.Var32(OutputBit);
+    reader.Var32(OutputPos);
+
+    reader.Var8(CurCmd);
+
+    reader.Var8(StatusReg1);
+    reader.Var8(StatusReg2);
+    reader.VarArray(Alarm1, sizeof(Alarm1));
+    reader.VarArray(Alarm2, sizeof(Alarm2));
+    reader.Var8(ClockAdjust);
+    reader.Var8(FreeReg);
+}
+
 u8 BCD(u8 val)
 {
     return (val % 10) | ((val / 10) << 4);

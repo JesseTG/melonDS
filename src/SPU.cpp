@@ -201,6 +201,20 @@ void SaveState(SavestateWriter& writer)
     Capture[1]->SaveState(writer);
 }
 
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("SPU.");
+
+    reader.Var16(Cnt);
+    reader.Var8(MasterVolume);
+    reader.Var16(Bias);
+
+    for (Channel* c : Channels)
+        c->LoadState(reader);
+
+    Capture[0]->LoadState(reader);
+    Capture[1]->LoadState(reader);
+}
 
 void SetPowerCnt(u32 val)
 {
@@ -326,6 +340,37 @@ void Channel::SaveState(SavestateWriter& writer)
     writer.VarArray(FIFO, sizeof(FIFO));
 }
 
+void Channel::LoadState(SavestateReader& reader)
+{
+    reader.Var32(Cnt);
+    reader.Var32(SrcAddr);
+    reader.Var16(TimerReload);
+    reader.Var32(LoopPos);
+    reader.Var32(Length);
+
+    reader.Var8(Volume);
+    reader.Var8(VolumeShift);
+    reader.Var8(Pan);
+
+    reader.Var(KeyOn);
+    reader.Var32(Timer);
+    reader.Var(Pos);
+    reader.VarArray(PrevSample, sizeof(PrevSample));
+    reader.Var(CurSample);
+    reader.Var16(NoiseVal);
+
+    reader.Var(ADPCMVal);
+    reader.Var(ADPCMIndex);
+    reader.Var(ADPCMValLoop);
+    reader.Var(ADPCMIndexLoop);
+    reader.Var8(ADPCMCurByte);
+
+    reader.Var32(FIFOReadPos);
+    reader.Var32(FIFOWritePos);
+    reader.Var32(FIFOReadOffset);
+    reader.Var32(FIFOLevel);
+    reader.VarArray(FIFO, sizeof(FIFO));
+}
 
 void Channel::FIFO_BufferData()
 {
@@ -693,6 +738,23 @@ void CaptureUnit::SaveState(SavestateWriter& writer)
     writer.Var32(FIFOWriteOffset);
     writer.Var32(FIFOLevel);
     writer.VarArray(FIFO, sizeof(FIFO));
+}
+
+void CaptureUnit::LoadState(SavestateReader& reader)
+{
+    reader.Var8(Cnt);
+    reader.Var32(DstAddr);
+    reader.Var16(TimerReload);
+    reader.Var32(Length);
+
+    reader.Var32(Timer);
+    reader.Var(Pos);
+
+    reader.Var32(FIFOReadPos);
+    reader.Var32(FIFOWritePos);
+    reader.Var32(FIFOWriteOffset);
+    reader.Var32(FIFOLevel);
+    reader.VarArray(FIFO, sizeof(FIFO));
 }
 
 void CaptureUnit::FIFO_FlushData()

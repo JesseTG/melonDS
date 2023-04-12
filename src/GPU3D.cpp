@@ -805,6 +805,199 @@ void SaveState(SavestateWriter& writer)
     writer.Bool32(AbortFrame);
 }
 
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("GP3D");
+
+    CmdFIFO.LoadState(reader);
+    CmdPIPE.LoadState(reader);
+
+    reader.Var32(NumCommands);
+    reader.Var32(CurCommand);
+    reader.Var32(ParamCount);
+    reader.Var32(TotalParams);
+
+    reader.Var32(NumPushPopCommands);
+    reader.Var32(NumTestCommands);
+
+    reader.Var32(DispCnt);
+    reader.Var8(AlphaRefVal);
+    reader.Var8(AlphaRef);
+
+    reader.VarArray(ToonTable, sizeof(ToonTable));
+    reader.VarArray(EdgeTable, sizeof(EdgeTable));
+
+    reader.Var32(FogColor);
+    reader.Var32(FogOffset);
+    reader.VarArray(FogDensityTable, sizeof(FogDensityTable));
+
+    reader.Var32(ClearAttr1);
+    reader.Var32(ClearAttr2);
+
+    reader.Var32(RenderDispCnt);
+    reader.Var8(RenderAlphaRef);
+
+    reader.VarArray(RenderToonTable, sizeof(RenderToonTable));
+    reader.VarArray(RenderEdgeTable, sizeof(RenderEdgeTable));
+
+    reader.Var32(RenderFogColor);
+    reader.Var32(RenderFogOffset);
+    reader.Var32(RenderFogShift);
+    reader.VarArray(RenderFogDensityTable, sizeof(RenderFogDensityTable));
+
+    reader.Var32(RenderClearAttr1);
+    reader.Var32(RenderClearAttr2);
+
+    reader.Var16(RenderXPos);
+
+    reader.Var32(ZeroDotWLimit);
+
+    reader.Var32(GXStat);
+
+    reader.VarArray(ExecParams, sizeof(ExecParams));
+    reader.Var32(ExecParamCount);
+    reader.Var(CycleCount);
+    reader.Var64(Timestamp);
+
+    reader.Var32(MatrixMode);
+
+    reader.VarArray(ProjMatrix, sizeof(ProjMatrix));
+    reader.VarArray(PosMatrix, sizeof(PosMatrix));
+    reader.VarArray(VecMatrix, sizeof(VecMatrix));
+    reader.VarArray(TexMatrix, sizeof(TexMatrix));
+
+    reader.VarArray(ProjMatrixStack, sizeof(ProjMatrixStack));
+    reader.VarArray(PosMatrixStack, sizeof(PosMatrixStack));
+    reader.VarArray(VecMatrixStack, sizeof(VecMatrixStack));
+    reader.VarArray(TexMatrixStack, sizeof(TexMatrixStack));
+
+    reader.Var(ProjMatrixStackPointer);
+    reader.Var(PosMatrixStackPointer);
+    reader.Var(TexMatrixStackPointer);
+
+    reader.VarArray(Viewport, sizeof(Viewport));
+
+    reader.VarArray(PosTestResult, sizeof(PosTestResult));
+    reader.VarArray(VecTestResult, sizeof(VecTestResult));
+
+    reader.Var32(VertexNum);
+    reader.Var32(VertexNumInPoly);
+    reader.Var32(NumConsecutivePolygons);
+
+    for (Vertex& vtx : TempVertexBuffer)
+    {
+        vtx.LoadState(reader);
+    }
+
+    u32 id;
+    reader.Var32(id);
+    if (id == 0xFFFFFFFF) LastStripPolygon = nullptr;
+    else          LastStripPolygon = &PolygonRAM[id];
+
+    reader.Var32(CurRAMBank);
+    reader.Var32(NumVertices);
+    reader.Var32(NumPolygons);
+    reader.Var32(NumOpaquePolygons);
+
+    reader.Var32(FlushRequest);
+    reader.Var32(FlushAttributes);
+
+    for (Vertex& vtx : VertexRAM)
+    {
+        vtx.LoadState(reader);
+    }
+
+    for(Polygon& poly: PolygonRAM)
+    {
+        // this is a bit ugly, but eh
+        // we can't save the pointers as-is, that's a bad idea
+        for (int j = 0; j < 10; j++)
+        {
+            u32 id = -1;
+            reader.Var32(id);
+            poly.Vertices[j] = (id == 0xFFFFFFFF) ? nullptr : &VertexRAM[id];
+        }
+        
+        reader.Var32(poly.NumVertices);
+
+        reader.VarArray(poly.FinalZ, sizeof(poly.FinalZ));
+        reader.VarArray(poly.FinalW, sizeof(poly.FinalW));
+        reader.Bool32(poly.WBuffer);
+
+        reader.Var32(poly.Attr);
+        reader.Var32(poly.TexParam);
+        reader.Var32(poly.TexPalette);
+
+        reader.Bool32(poly.FacingView);
+        reader.Bool32(poly.Translucent);
+
+        reader.Bool32(poly.IsShadowMask);
+        reader.Bool32(poly.IsShadow);
+
+        if (reader.IsAtLeastVersion(4, 1))
+            reader.Var(poly.Type);
+        else
+            poly.Type = 0;
+
+        reader.Var32(poly.VTop);
+        reader.Var32(poly.VBottom);
+        reader.Var(poly.YTop);
+        reader.Var(poly.YBottom);
+        reader.Var(poly.XTop);
+        reader.Var(poly.XBottom);
+
+        reader.Var32(poly.SortKey);
+
+        poly.Degenerate = false;
+
+        for (u32 j = 0; j < poly.NumVertices; j++)
+        {
+            if (poly.Vertices[j]->Position[3] == 0)
+                poly.Degenerate = true;
+        }
+
+        if (poly.YBottom > 192) poly.Degenerate = true;
+    }
+
+    // probably not worth storing the vblank-latched Renderxxxxxx variables
+    CmdStallQueue.LoadState(reader);
+
+    reader.Var(VertexPipeline);
+    reader.Var(NormalPipeline);
+    reader.Var(PolygonPipeline);
+    reader.Var(VertexSlotCounter);
+    reader.Var32(VertexSlotsFree);
+
+    ClipMatrixDirty = true;
+    UpdateClipMatrix();
+
+    CurVertexRAM = &VertexRAM[CurRAMBank ? 6144 : 0];
+    CurPolygonRAM = &PolygonRAM[CurRAMBank ? 2048 : 0];
+
+    // better safe than sorry, I guess
+    // might cause a blank frame but atleast it won't shit itself
+    RenderNumPolygons = 0;
+
+    reader.VarArray(CurVertex, sizeof(CurVertex));
+    reader.VarArray(VertexColor, sizeof(VertexColor));
+    reader.VarArray(TexCoords, sizeof(TexCoords));
+    reader.VarArray(RawTexCoords, sizeof(RawTexCoords));
+    reader.VarArray(Normal, sizeof(Normal));
+
+    reader.VarArray(LightDirection, sizeof(LightDirection));
+    reader.VarArray(LightColor, sizeof(LightColor));
+    reader.VarArray(MatDiffuse, sizeof(MatDiffuse));
+    reader.VarArray(MatAmbient, sizeof(MatAmbient));
+    reader.VarArray(MatSpecular, sizeof(MatSpecular));
+    reader.VarArray(MatEmission, sizeof(MatEmission));
+
+    reader.Bool32(UseShininessTable);
+    reader.VarArray(ShininessTable, sizeof(ShininessTable));
+
+    reader.Bool32(AbortFrame);
+}
+
+
 void SetEnabled(bool geometry, bool rendering)
 {
     GeometryEnabled = geometry;

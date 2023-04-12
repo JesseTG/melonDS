@@ -53,6 +53,14 @@ public:
         writer.VarArray(Entries, sizeof(T)*NumEntries);
     }
 
+    void LoadState(SavestateReader& reader)
+    {
+        reader.Var32(NumOccupied);
+        reader.Var32(ReadPos);
+        reader.Var32(WritePos);
+
+        reader.VarArray(Entries, sizeof(T)*NumEntries);
+    }
 
     void Write(T val)
     {
@@ -150,6 +158,15 @@ public:
         writer.Var32(WritePos);
 
         writer.VarArray(Entries, sizeof(T)*NumEntries);
+    }
+
+    void LoadState(SavestateReader& reader)
+    {
+        reader.Var32(NumOccupied);
+        reader.Var32(ReadPos);
+        reader.Var32(WritePos);
+
+        reader.VarArray(Entries, sizeof(T)*NumEntries);
     }
 
     void Write(T val)

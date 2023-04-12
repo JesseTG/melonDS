@@ -60,6 +60,7 @@ void Stop();
 
 [[deprecated]] void DoSavestate(Savestate* file);
 void SaveState(SavestateWriter& writer);
+void LoadState(SavestateReader& reader);
 
 void SetCartInserted(bool inserted);
 

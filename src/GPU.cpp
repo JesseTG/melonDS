@@ -421,6 +421,66 @@ void SaveState(SavestateWriter& writer)
     ResetVRAMCache();
 }
 
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("GPUG");
+
+    reader.Var16(VCount);
+    reader.Var32(NextVCount);
+    reader.Var16(TotalScanlines);
+
+    reader.VarArray(DispStat, sizeof(DispStat));
+    reader.VarArray(VMatch, sizeof(VMatch));
+
+    reader.VarArray(Palette, sizeof(Palette));
+    reader.VarArray(OAM, sizeof(OAM));
+
+    reader.VarArray(VRAM_A, sizeof(VRAM_A));
+    reader.VarArray(VRAM_B, sizeof(VRAM_B));
+    reader.VarArray(VRAM_C, sizeof(VRAM_C));
+    reader.VarArray(VRAM_D, sizeof(VRAM_D));
+    reader.VarArray(VRAM_E,  sizeof(VRAM_E));
+    reader.VarArray(VRAM_F,  sizeof(VRAM_F));
+    reader.VarArray(VRAM_G,  sizeof(VRAM_G));
+    reader.VarArray(VRAM_H,  sizeof(VRAM_H));
+    reader.VarArray(VRAM_I,  sizeof(VRAM_I));
+
+    reader.VarArray(VRAMCNT, sizeof(VRAMCNT));
+    reader.Var8(VRAMSTAT);
+
+    reader.Var32(VRAMMap_LCDC);
+
+    reader.VarArray(VRAMMap_ABG, sizeof(VRAMMap_ABG));
+    reader.VarArray(VRAMMap_AOBJ, sizeof(VRAMMap_AOBJ));
+    reader.VarArray(VRAMMap_BBG, sizeof(VRAMMap_BBG));
+    reader.VarArray(VRAMMap_BOBJ, sizeof(VRAMMap_BOBJ));
+
+    reader.VarArray(VRAMMap_ABGExtPal, sizeof(VRAMMap_ABGExtPal));
+    reader.Var32(VRAMMap_AOBJExtPal);
+    reader.VarArray(VRAMMap_BBGExtPal, sizeof(VRAMMap_BBGExtPal));
+    reader.Var32(VRAMMap_BOBJExtPal);
+
+    reader.VarArray(VRAMMap_Texture, sizeof(VRAMMap_Texture));
+    reader.VarArray(VRAMMap_TexPal, sizeof(VRAMMap_TexPal));
+
+    reader.VarArray(VRAMMap_ARM7, sizeof(VRAMMap_ARM7));
+
+    for (int i = 0; i < 0x20; i++)
+        VRAMPtr_ABG[i] = GetUniqueBankPtr(VRAMMap_ABG[i], i << 14);
+    for (int i = 0; i < 0x10; i++)
+        VRAMPtr_AOBJ[i] = GetUniqueBankPtr(VRAMMap_AOBJ[i], i << 14);
+    for (int i = 0; i < 0x8; i++)
+        VRAMPtr_BBG[i] = GetUniqueBankPtr(VRAMMap_BBG[i], i << 14);
+    for (int i = 0; i < 0x8; i++)
+        VRAMPtr_BOBJ[i] = GetUniqueBankPtr(VRAMMap_BOBJ[i], i << 14);
+
+    GPU2D_A.LoadState(reader);
+    GPU2D_B.LoadState(reader);
+    GPU3D::LoadState(reader);
+
+    ResetVRAMCache();
+}
+
 void AssignFramebuffers()
 {
     int backbuf = FrontBuffer ? 0 : 1;

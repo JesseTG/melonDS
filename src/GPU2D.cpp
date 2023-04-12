@@ -243,6 +243,57 @@ void Unit::SaveState(SavestateWriter& writer)
     writer.Var32(Win1Active);
 }
 
+void Unit::LoadState(SavestateReader& reader)
+{
+    reader.Section((char*)(Num ? "GP2B" : "GP2A"));
+
+    reader.Var32(DispCnt);
+    reader.VarArray(BGCnt, sizeof(BGCnt));
+    reader.VarArray(BGXPos, sizeof(BGXPos));
+    reader.VarArray(BGYPos, sizeof(BGYPos));
+    reader.VarArray(BGXRef, sizeof(BGXRef));
+    reader.VarArray(BGYRef, sizeof(BGYRef));
+    reader.VarArray(BGXRefInternal, sizeof(BGXRefInternal));
+    reader.VarArray(BGYRefInternal, sizeof(BGYRefInternal));
+    reader.VarArray(BGRotA, sizeof(BGRotA));
+    reader.VarArray(BGRotB, sizeof(BGRotB));
+    reader.VarArray(BGRotC, sizeof(BGRotC));
+    reader.VarArray(BGRotD, sizeof(BGRotD));
+
+    reader.VarArray(Win0Coords, sizeof(Win0Coords));
+    reader.VarArray(Win1Coords, sizeof(Win1Coords));
+    reader.VarArray(WinCnt, sizeof(WinCnt));
+
+    reader.VarArray(BGMosaicSize, sizeof(BGMosaicSize));
+    reader.VarArray(OBJMosaicSize, sizeof(OBJMosaicSize));
+    reader.Var8(BGMosaicY);
+    reader.Var8(BGMosaicYMax);
+    reader.Var8(OBJMosaicY);
+    reader.Var8(OBJMosaicYMax);
+
+    reader.Var16(BlendCnt);
+    reader.Var16(BlendAlpha);
+    reader.Var8(EVA);
+    reader.Var8(EVB);
+    reader.Var8(EVY);
+
+    reader.Var16(MasterBrightness);
+
+    if (!Num)
+    {
+        reader.VarArray(DispFIFO, sizeof(DispFIFO));
+        reader.Var32(DispFIFOReadPtr);
+        reader.Var32(DispFIFOWritePtr);
+
+        reader.VarArray(DispFIFOBuffer, sizeof(DispFIFOBuffer));
+
+        reader.Var32(CaptureCnt);
+    }
+
+    reader.Var32(Win0Active);
+    reader.Var32(Win1Active);
+}
+
 u8 Unit::Read8(u32 addr)
 {
     switch (addr & 0x00000FFF)

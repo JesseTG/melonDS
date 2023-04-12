@@ -287,6 +287,76 @@ void SaveState(SavestateWriter& writer)
     SDIO->SaveState(writer);
 }
 
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("DSIG");
+
+    reader.Var16(SCFG_BIOS);
+    reader.Var16(SCFG_Clock9);
+    reader.Var16(SCFG_Clock7);
+    reader.VarArray(SCFG_EXT, sizeof(SCFG_EXT));
+    reader.Var32(SCFG_MC);
+    reader.Var16(SCFG_RST);
+
+    //reader.VarArray(ARM9iBIOS, 0x10000);
+    //reader.VarArray(ARM7iBIOS, 0x10000);
+
+    Set_SCFG_Clock9(SCFG_Clock9);
+    Set_SCFG_MC(SCFG_MC);
+    DSi_DSP::SetRstLine(SCFG_RST & 0x0001);
+
+    MBK[0][8] = 0;
+    MBK[1][8] = 0;
+
+    u32 mbk[12];
+    reader.VarArray(mbk, sizeof(mbk));
+
+    MapNWRAM_A(0, mbk[0] & 0xFF);
+    MapNWRAM_A(1, (mbk[0] >> 8) & 0xFF);
+    MapNWRAM_A(2, (mbk[0] >> 16) & 0xFF);
+    MapNWRAM_A(3, mbk[0] >> 24);
+
+    MapNWRAM_B(0, mbk[1] & 0xFF);
+    MapNWRAM_B(1, (mbk[1] >> 8) & 0xFF);
+    MapNWRAM_B(2, (mbk[1] >> 16) & 0xFF);
+    MapNWRAM_B(3, mbk[1] >> 24);
+    MapNWRAM_B(4, mbk[2] & 0xFF);
+    MapNWRAM_B(5, (mbk[2] >> 8) & 0xFF);
+    MapNWRAM_B(6, (mbk[2] >> 16) & 0xFF);
+    MapNWRAM_B(7, mbk[2] >> 24);
+
+    MapNWRAM_C(0, mbk[3] & 0xFF);
+    MapNWRAM_C(1, (mbk[3] >> 8) & 0xFF);
+    MapNWRAM_C(2, (mbk[3] >> 16) & 0xFF);
+    MapNWRAM_C(3, mbk[3] >> 24);
+    MapNWRAM_C(4, mbk[4] & 0xFF);
+    MapNWRAM_C(5, (mbk[4] >> 8) & 0xFF);
+    MapNWRAM_C(6, (mbk[4] >> 16) & 0xFF);
+    MapNWRAM_C(7, mbk[4] >> 24);
+
+    MapNWRAMRange(0, 0, mbk[5]);
+    MapNWRAMRange(0, 1, mbk[6]);
+    MapNWRAMRange(0, 2, mbk[7]);
+
+    MapNWRAMRange(1, 0, mbk[8]);
+    MapNWRAMRange(1, 1, mbk[9]);
+    MapNWRAMRange(1, 2, mbk[10]);
+
+    mbk[11] &= 0x00FFFF0F;
+    MBK[0][8] = mbk[11];
+    MBK[1][8] = mbk[11];
+
+    for (DSi_NDMA* NDMA : NDMAs)
+        NDMA->LoadState(reader);
+
+    DSi_AES::LoadState(reader);
+    DSi_CamModule::LoadState(reader);
+    DSi_DSP::LoadState(reader);
+    DSi_I2C::LoadState(reader);
+    SDMMC->LoadState(reader);
+    SDIO->LoadState(reader);
+}
+
 void SetCartInserted(bool inserted)
 {
     if (inserted)

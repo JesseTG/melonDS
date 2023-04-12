@@ -183,6 +183,7 @@ void DeInit();
 void Reset();
 [[deprecated]] void DoSavestate(Savestate* file);
 void SaveState(SavestateWriter& writer);
+void LoadState(SavestateReader& reader);
 
 void SetPowerCnt(u32 val);
 

@@ -231,6 +231,42 @@ void SaveState(SavestateWriter& writer)
     writer.VarArray(Ctx.Iv, AES_BLOCKLEN);
 }
 
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("AESi");
+
+    reader.Var32(Cnt);
+
+    reader.Var32(BlkCnt);
+    reader.Var32(RemExtra);
+    reader.Var32(RemBlocks);
+
+    reader.Bool32(OutputFlush);
+
+    reader.Var32(InputDMASize);
+    reader.Var32(OutputDMASize);
+    reader.Var32(AESMode);
+
+    InputFIFO.LoadState(reader);
+    OutputFIFO.LoadState(reader);
+
+    reader.VarArray(IV, sizeof(IV));
+
+    reader.VarArray(MAC, sizeof(MAC));
+
+    reader.VarArray(KeyNormal, sizeof(KeyNormal));
+    reader.VarArray(KeyX, sizeof(KeyX));
+    reader.VarArray(KeyY, sizeof(KeyY));
+
+    reader.VarArray(CurKey, sizeof(CurKey));
+    reader.VarArray(CurMAC, sizeof(CurMAC));
+
+    reader.VarArray(OutputMAC, sizeof(OutputMAC));
+    reader.Bool32(OutputMACDue);
+
+    reader.VarArray(Ctx.RoundKey, AES_keyExpSize);
+    reader.VarArray(Ctx.Iv, AES_BLOCKLEN);
+}
 
 void ProcessBlock_CCM_Extra()
 {

@@ -291,6 +291,55 @@ void ARM::SaveState(SavestateWriter& writer)
     writer.Var32(ExceptionBase);
 }
 
+void ARM::LoadState(SavestateReader &reader)
+{
+    reader.Section((char*)(Num ? "ARM7" : "ARM9"));
+
+    reader.Var(Cycles);
+    //reader.Var32((u32*)&CyclesToRun);
+
+    // hack to make save states compatible
+    u32 halted = Halted;
+    reader.Var32(halted);
+    Halted = halted;
+
+    reader.VarArray(R, sizeof(R));
+    reader.Var32(CPSR);
+    reader.VarArray(R_FIQ, sizeof(R_FIQ));
+    reader.VarArray(R_SVC, sizeof(R_SVC));
+    reader.VarArray(R_ABT, sizeof(R_ABT));
+    reader.VarArray(R_IRQ, sizeof(R_IRQ));
+    reader.VarArray(R_UND, sizeof(R_UND));
+    reader.Var32(CurInstr);
+    reader.VarArray(NextInstr, sizeof(NextInstr));
+
+    reader.Var32(ExceptionBase);
+
+    CPSR |= 0x00000010;
+    R_FIQ[7] |= 0x00000010;
+    R_SVC[2] |= 0x00000010;
+    R_ABT[2] |= 0x00000010;
+    R_IRQ[2] |= 0x00000010;
+    R_UND[2] |= 0x00000010;
+
+    if (!Num)
+    {
+        SetupCodeMem(R[15]); // should fix it
+        ((ARMv5*)this)->RegionCodeCycles = ((ARMv5*)this)->MemTimings[R[15] >> 12][0];
+
+        if ((CPSR & 0x1F) == 0x10)
+            ((ARMv5*)this)->PU_Map = ((ARMv5*)this)->PU_UserMap;
+        else
+            ((ARMv5*)this)->PU_Map = ((ARMv5*)this)->PU_PrivMap;
+    }
+    else
+    {
+        CodeRegion = R[15] >> 24;
+        CodeCycles = R[15] >> 15; // cheato
+    }
+    
+}
+
 void ARMv5::DoSavestate(Savestate* file)
 {
     ARM::DoSavestate(file);
@@ -301,6 +350,12 @@ void ARMv5::SaveState(SavestateWriter& writer)
 {
     ARM::SaveState(writer);
     CP15SaveState(writer);
+}
+
+void ARMv5::LoadState(SavestateReader& reader)
+{
+    ARM::LoadState(reader);
+    CP15LoadState(reader);
 }
 
 void ARM::SetupCodeMem(u32 addr)

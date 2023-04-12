@@ -257,6 +257,15 @@ void CartCommon::SaveState(SavestateWriter& writer)
     writer.Bool32(DSiMode);
 }
 
+void CartCommon::LoadState(SavestateReader& reader)
+{
+    reader.Section("NDCS");
+
+    reader.Var32(CmdEncMode);
+    reader.Var32(DataEncMode);
+    reader.Bool32(DSiMode);
+}
+
 void CartCommon::SetupSave(u32 type)
 {
 }
@@ -494,6 +503,40 @@ void CartRetail::SaveState(SavestateWriter& writer)
     writer.Var8(SRAMCmd);
     writer.Var32(SRAMAddr);
     writer.Var8(SRAMStatus);
+}
+
+void CartRetail::LoadState(SavestateReader& reader)
+{
+    CartCommon::LoadState(reader);
+
+    // we reload the SRAM contents.
+    // it should be the same file, but the contents may change
+
+    u32 oldlen = SRAMLength;
+
+    reader.Var32(SRAMLength);
+    if (SRAMLength != oldlen)
+    {
+        Log(LogLevel::Warn, "savestate: VERY BAD!!!! SRAM LENGTH DIFFERENT. %d -> %d\n", oldlen, SRAMLength);
+        Log(LogLevel::Warn, "oh well. loading it anyway. adsfgdsf\n");
+
+        if (oldlen) delete[] SRAM;
+        SRAM = nullptr;
+        if (SRAMLength) SRAM = new u8[SRAMLength];
+    }
+    if (SRAMLength)
+    {
+        reader.VarArray(SRAM, SRAMLength);
+    }
+
+    // SPI status shito
+
+    reader.Var8(SRAMCmd);
+    reader.Var32(SRAMAddr);
+    reader.Var8(SRAMStatus);
+
+    if (SRAM)
+        Platform::WriteNDSSave(SRAM, SRAMLength, 0, SRAMLength);
 }
 
 void CartRetail::SetupSave(u32 type)
@@ -952,6 +995,19 @@ void CartRetailNAND::SaveState(SavestateWriter& writer)
     writer.Var32(SRAMWritePos);
 }
 
+void CartRetailNAND::LoadState(SavestateReader& reader)
+{
+    CartRetail::LoadState(reader);
+
+    reader.Var32(SRAMBase);
+    reader.Var32(SRAMWindow);
+
+    reader.VarArray(SRAMWriteBuffer, sizeof(SRAMWriteBuffer));
+    reader.Var32(SRAMWritePos);
+
+    BuildSRAMID();
+}
+
 void CartRetailNAND::LoadSave(const u8* savedata, u32 savelen)
 {
     CartRetail::LoadSave(savedata, savelen);
@@ -1173,6 +1229,13 @@ void CartRetailIR::SaveState(SavestateWriter& writer)
     writer.Var8(IRCmd);
 }
 
+void CartRetailIR::LoadState(SavestateReader& reader)
+{
+    CartRetail::LoadState(reader);
+
+    reader.Var8(IRCmd);
+}
+
 u8 CartRetailIR::SPIWrite(u8 val, u32 pos, bool last)
 {
     if (pos == 0)
@@ -1218,6 +1281,11 @@ void CartRetailBT::DoSavestate(Savestate* file)
 void CartRetailBT::SaveState(SavestateWriter& writer)
 {
     CartRetail::SaveState(writer);
+}
+
+void CartRetailBT::LoadState(SavestateReader& reader)
+{
+    CartRetail::LoadState(reader);
 }
 
 u8 CartRetailBT::SPIWrite(u8 val, u32 pos, bool last)
@@ -1322,6 +1390,11 @@ void CartHomebrew::DoSavestate(Savestate* file)
 void CartHomebrew::SaveState(SavestateWriter& writer)
 {
     CartCommon::SaveState(writer);
+}
+
+void CartHomebrew::LoadState(SavestateReader& reader)
+{
+    CartCommon::LoadState(reader);
 }
 
 int CartHomebrew::ROMCommandStart(u8* cmd, u8* data, u32 len)
@@ -1634,6 +1707,49 @@ void SaveState(SavestateWriter& writer)
     if (Cart) Cart->SaveState(writer);
 }
 
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("NDSC");
+
+    reader.Var16(SPICnt);
+    reader.Var32(ROMCnt);
+
+    reader.Var8(SPIData);
+    reader.Var32(SPIDataPos);
+    reader.Bool32(SPIHold);
+
+    reader.VarArray(ROMCommand, sizeof(ROMCommand));
+    reader.Var32(ROMData);
+
+    reader.VarArray(TransferData, sizeof(TransferData));
+    reader.Var32(TransferPos);
+    reader.Var32(TransferLen);
+    reader.Var32(TransferDir);
+    reader.VarArray(TransferCmd, sizeof(TransferCmd));
+
+    // cart inserted/len/ROM/etc should be already populated
+    // savestate should be loaded after the right game is loaded
+    // (TODO: system to verify that indeed the right ROM is loaded)
+    // (what to CRC? whole ROM? code binaries? latter would be more convenient for ie. romhaxing)
+
+    u32 carttype = 0;
+    u32 cartchk = 0;
+    if (Cart)
+    {
+        carttype = Cart->Type();
+        cartchk = Cart->Checksum();
+    }
+
+    u32 savetype;
+    reader.Var32(savetype);
+    if (savetype != carttype) return;
+
+    u32 savechk;
+    reader.Var32(savechk);
+    if (savechk != cartchk) return;
+
+    if (Cart) Cart->LoadState(reader);
+}
 
 bool ReadROMParams(u32 gamecode, ROMListEntry* params)
 {

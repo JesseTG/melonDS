@@ -38,6 +38,7 @@ public:
 
     [[deprecated]] void DoSavestate(Savestate* file);
     void SaveState(SavestateWriter& writer);
+    void LoadState(SavestateReader& reader);
 
     static void FinishRX(u32 param);
     static void FinishTX(u32 param);
@@ -112,6 +113,7 @@ public:
 
     [[deprecated]] virtual void DoSavestate(Savestate* file) = 0;
     virtual void SaveState(SavestateWriter& writer) = 0;
+    virtual void LoadState(SavestateReader& reader) = 0;
 
     virtual void SendCMD(u8 cmd, u32 param) = 0;
     virtual void ContinueTransfer() = 0;
@@ -135,6 +137,7 @@ public:
 
     [[deprecated]] void DoSavestate(Savestate* file);
     void SaveState(SavestateWriter& writer) override;
+    void LoadState(SavestateReader& reader) override;
 
     void SetCID(u8* cid) { memcpy(CID, cid, 16); }
 

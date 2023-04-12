@@ -33,6 +33,7 @@ void Reset();
 
 [[deprecated]] void DoSavestate(Savestate* file);
 void SaveState(SavestateWriter& writer);
+void LoadState(SavestateReader& reader);
 
 u32 ReadCnt();
 void WriteCnt(u32 val);

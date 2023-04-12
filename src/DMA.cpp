@@ -131,6 +131,30 @@ void DMA::SaveState(SavestateWriter &writer) const
     writer.Var32(MRAMBurstCount);
 }
 
+void DMA::LoadState(SavestateReader &reader)
+{
+    char magic[5] = "DMAx";
+    magic[3] = '0' + Num + (CPU*4);
+    reader.Section(magic);
+
+    reader.Var32(SrcAddr);
+    reader.Var32(DstAddr);
+    reader.Var32(Cnt);
+
+    reader.Var32(StartMode);
+    reader.Var32(CurSrcAddr);
+    reader.Var32(CurDstAddr);
+    reader.Var32(RemCount);
+    reader.Var32(IterCount);
+    reader.Var(SrcAddrInc);
+    reader.Var(DstAddrInc);
+
+    reader.Var32(Running);
+    reader.Bool32(InProgress);
+    reader.Bool32(IsGXFIFODMA);
+    reader.Var32(MRAMBurstCount);
+}
+
 void DMA::WriteCnt(u32 val)
 {
     u32 oldcnt = Cnt;

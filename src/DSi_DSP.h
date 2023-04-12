@@ -47,6 +47,7 @@ void Reset();
 
 [[deprecated]] void DoSavestate(Savestate* file);
 void SaveState(SavestateWriter& writer);
+void LoadState(SavestateReader& reader);
 
 void DSPCatchUpU32(u32 _);
 

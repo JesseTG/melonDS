@@ -630,5 +630,27 @@ void SaveState(SavestateWriter& writer)
     // TODO: save the Teakra state!!!
 }
 
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("DSPi");
+
+    PDATAReadFifo.LoadState(reader);
+
+    reader.Var64(DSPTimestamp);
+    reader.Var(PDataDMALen);
+
+    reader.Var16(DSP_PADR);
+    reader.Var16(DSP_PCFG);
+    reader.Var16(DSP_PSTS);
+    reader.Var16(DSP_PSEM);
+    reader.Var16(DSP_PMASK);
+    reader.Var16(DSP_PCLEAR);
+    reader.VarArray(DSP_CMD, sizeof(DSP_CMD));
+    reader.VarArray(DSP_REP, sizeof(DSP_REP));
+    reader.Var(SCFG_RST);
+
+    // TODO: save the Teakra state!!!
+}
+
 }
 

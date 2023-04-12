@@ -93,6 +93,17 @@ struct TXSlot
         writer.Var(CurPhaseTime);
         writer.Var32(HalfwordTimeMask);
     }
+
+    void LoadState(SavestateReader& reader)
+    {
+        reader.Bool32(Valid);
+        reader.Var16(Addr);
+        reader.Var16(Length);
+        reader.Var8(Rate);
+        reader.Var8(CurPhase);
+        reader.Var(CurPhaseTime);
+        reader.Var32(HalfwordTimeMask);
+    }
 };
 
 TXSlot TXSlots[6];
@@ -388,7 +399,7 @@ void SaveState(SavestateWriter& writer)
 
     writer.VarArray(RXBuffer, sizeof(RXBuffer));
     writer.Var32(RXBufferPtr);
-    writer.Var32(RXTime);
+    writer.Var(RXTime);
     writer.Var32(RXHalfwordTimeMask);
 
     writer.Var32(ComStatus);
@@ -409,6 +420,66 @@ void SaveState(SavestateWriter& writer)
     writer.Var64(RXTimestamp);
 }
 
+void LoadState(SavestateReader& reader)
+{
+    reader.Section("WIFI");
+
+    // berp.
+    // not sure we're saving enough shit at all there.
+    // also: savestate and wifi can't fucking work together!!
+    // or it can but you would be disconnected
+
+    reader.VarArray(RAM, sizeof(RAM));
+    reader.VarArray(IO, sizeof(IO));
+
+    reader.Bool32(Enabled);
+    reader.Bool32(PowerOn);
+
+    reader.Var16(Random);
+
+    reader.Var(TimerError);
+
+    reader.VarArray(BBRegs, sizeof(BBRegs));
+    reader.VarArray(BBRegsRO, sizeof(BBRegsRO));
+
+    reader.Var8(RFVersion);
+    reader.VarArray(RFRegs, sizeof(RFRegs));
+
+    reader.Var64(USCounter);
+    reader.Var64(USCompare);
+    reader.Bool32(BlockBeaconIRQ14);
+
+    reader.Var32(CmdCounter);
+
+    reader.Var64(USTimestamp);
+
+    for (TXSlot& slot : TXSlots)
+    {
+        slot.LoadState(reader);
+    }
+
+    reader.VarArray(RXBuffer, sizeof(RXBuffer));
+    reader.Var32(RXBufferPtr);
+    reader.Var(RXTime);
+    reader.Var32(RXHalfwordTimeMask);
+
+    reader.Var32(ComStatus);
+    reader.Var32(TXCurSlot);
+    reader.Var32(RXCounter);
+
+    reader.Var(MPReplyTimer);
+    reader.Var16(MPClientMask);
+    reader.Var16(MPClientFail);
+
+    reader.VarArray(MPClientReplies, sizeof(MPClientReplies));
+
+    reader.Var(USUntilPowerOn);
+    reader.Bool32(ForcePowerOn);
+
+    reader.Bool32(IsMPClient);
+    reader.Var64(NextSync);
+    reader.Var64(RXTimestamp);
+}
 
 void ScheduleTimer(bool first)
 {

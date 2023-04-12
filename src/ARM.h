@@ -48,6 +48,7 @@ public:
 
     [[deprecated]] virtual void DoSavestate(Savestate* file);
     virtual void SaveState(SavestateWriter& writer);
+    virtual void LoadState(SavestateReader& reader);
 
     virtual void FillPipeline() = 0;
 
@@ -176,6 +177,7 @@ public:
 
     [[deprecated]] void DoSavestate(Savestate* file);
     void SaveState(SavestateWriter& writer) override;
+    void LoadState(SavestateReader& reader) override;
 
     void UpdateRegionTimings(u32 addrstart, u32 addrend);
 
@@ -247,6 +249,7 @@ public:
     void CP15Reset();
     [[deprecated]] void CP15DoSavestate(Savestate* file);
     void CP15SaveState(SavestateWriter& writer) const;
+    void CP15LoadState(SavestateReader& reader);
 
     void UpdateDTCMSetting();
     void UpdateITCMSetting();

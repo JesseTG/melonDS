@@ -186,7 +186,7 @@ void DSi_SDHost::DoSavestate(Savestate* file)
 
     file->Var16(&Command);
     file->Var32(&Param);
-    file->VarArray(ResponseBuffer, 8);
+    file->VarArray(ResponseBuffer, 8); // length is incorrect
 
     file->Var32(&CurFIFO);
     DataFIFO[0].DoSavestate(file);
@@ -225,7 +225,7 @@ void DSi_SDHost::SaveState(SavestateWriter& writer)
 
     writer.Var16(Command);
     writer.Var32(Param);
-    writer.VarArray(ResponseBuffer, 8);
+    writer.VarArray(ResponseBuffer, 8); // length is incorrect
 
     writer.Var32(CurFIFO);
     DataFIFO[0].SaveState(writer);
@@ -234,6 +234,45 @@ void DSi_SDHost::SaveState(SavestateWriter& writer)
 
     if (Ports[0]) Ports[0]->SaveState(writer);
     if (Ports[1]) Ports[1]->SaveState(writer);
+}
+
+void DSi_SDHost::LoadState(SavestateReader &reader)
+{
+    reader.Section(Num ? "SDIO" : "SDMM");
+
+    reader.Var16(PortSelect);
+    reader.Var16(SoftReset);
+    reader.Var16(SDClock);
+    reader.Var16(SDOption);
+
+    reader.Var32(IRQStatus);
+    reader.Var32(IRQMask);
+
+    reader.Var16(CardIRQStatus);
+    reader.Var16(CardIRQMask);
+    reader.Var16(CardIRQCtl);
+
+    reader.Var16(DataCtl);
+    reader.Var16(Data32IRQ);
+    reader.Var32(DataMode);
+    reader.Var16(BlockCount16);
+    reader.Var16(BlockCount32);
+    reader.Var16(BlockCountInternal);
+    reader.Var16(BlockLen16);
+    reader.Var16(BlockLen32);
+    reader.Var16(StopAction);
+
+    reader.Var16(Command);
+    reader.Var32(Param);
+    reader.VarArray(ResponseBuffer, 8);
+
+    reader.Var32(CurFIFO);
+    DataFIFO[0].LoadState(reader);
+    DataFIFO[1].LoadState(reader);
+    DataFIFO32.LoadState(reader);
+
+    if (Ports[0]) Ports[0]->LoadState(reader);
+    if (Ports[1]) Ports[1]->LoadState(reader);
 }
 
 void DSi_SDHost::UpdateData32IRQ()
@@ -904,6 +943,26 @@ void DSi_MMCStorage::SaveState(SavestateWriter& writer)
     writer.Var32(BlockSize);
     writer.Var64(RWAddress);
     writer.Var32(RWCommand);
+
+    // TODO: what about the file contents?
+}
+
+void DSi_MMCStorage::LoadState(SavestateReader& reader)
+{
+    reader.Section(Internal ? "NAND" : "SDCR");
+
+    reader.VarArray(CID, sizeof(CID));
+    reader.VarArray(CSD, sizeof(CSD));
+
+    reader.Var32(CSR);
+    reader.Var32(OCR);
+    reader.Var32(RCA);
+    reader.VarArray(SCR, sizeof(SCR));
+    reader.VarArray(SSR, sizeof(SSR));
+
+    reader.Var32(BlockSize);
+    reader.Var64(RWAddress);
+    reader.Var32(RWCommand);
 
     // TODO: what about the file contents?
 }

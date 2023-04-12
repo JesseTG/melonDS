@@ -57,6 +57,18 @@ struct Vertex
         writer.VarArray(FinalPosition, sizeof(FinalPosition));
         writer.VarArray(FinalColor, sizeof(FinalColor));
     }
+
+    void LoadState(SavestateReader& reader)
+    {
+        reader.VarArray(Position, sizeof(Position));
+        reader.VarArray(Color, sizeof(Color));
+        reader.VarArray(TexCoords, sizeof(TexCoords));
+
+        reader.Bool32(Clipped);
+
+        reader.VarArray(FinalPosition, sizeof(FinalPosition));
+        reader.VarArray(FinalColor, sizeof(FinalColor));
+    }
 };
 
 struct Polygon
@@ -118,6 +130,7 @@ void Reset();
 
 [[deprecated]] void DoSavestate(Savestate* file);
 void SaveState(SavestateWriter& writer);
+void LoadState(SavestateReader& reader);
 
 void SetEnabled(bool geometry, bool rendering);
 
