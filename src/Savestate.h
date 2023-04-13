@@ -167,7 +167,7 @@ public:
     /// TODO
     [[deprecated]] void Finish();
 
-    [[nodiscard]] bool IsAtLeastVersion(u32 major, u32 minor) const
+    [[nodiscard, deprecated]] bool IsAtLeastVersion(u32 major, u32 minor) const
     {
         return false;
     }
