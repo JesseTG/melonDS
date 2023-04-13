@@ -385,9 +385,9 @@ bool SaveState(std::string filename)
         return false;
     }
 
-    size_t bytes_written = fwrite(state.GetBuffer(), 1, state.BufferLength(), state_file);
+    size_t bytes_written = fwrite(state.GetBuffer(), 1, state.StateLength(), state_file);
     fclose(state_file);
-    if (bytes_written < state.BufferLength())
+    if (bytes_written < state.StateLength())
     {
         return false;
     }
