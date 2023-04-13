@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <cassert>
+#include <cstring>
 #include "Savestate.h"
 #include "Platform.h"
 
@@ -61,6 +62,8 @@ Savestate::Savestate(size_t initial_buffer_length) :
         Platform::Log(LogLevel::Error, "Failed to allocate %u-byte savestate buffer\n", initial_buffer_length);
         return;
     }
+
+    memset(buffer, 0, initial_buffer_length);
 }
 
 Savestate::Savestate(u8 *buffer, size_t buffer_length) :
@@ -94,25 +97,26 @@ void Savestate::Finish()
 // TODO: Clean this up
 bool Savestate::Resize(u32 new_length)
 {
-    if (owned_buffer) {
-        // If we're allowed to resize this buffer...
-        void* resized = realloc(buffer, new_length);
-        if (!resized)
-        { // If the buffer couldn't be expanded...
-            Log(LogLevel::Error, "savestate: Failed to resize owned savestate buffer\n");
-            return false;
-        }
-        else
-        {
-            buffer = static_cast<u8 *>(resized);
-            buffer_length = new_length;
-            return true;
-        }
-    }
-    else {
+    if (!owned_buffer)
+    { // If we're not allowed to resize this buffer...
         Log(LogLevel::Error, "savestate: Buffer is externally-owned, cannot resize it\n");
         return false;
     }
+
+    void* resized = realloc(buffer, new_length);
+    if (!resized)
+    { // If the buffer couldn't be expanded...
+        Log(LogLevel::Error, "savestate: Failed to resize owned savestate buffer\n");
+        return false;
+    }
+
+    u32 old_length = buffer_length;
+    u32 length_diff = new_length - old_length;
+    buffer = static_cast<u8 *>(resized);
+    buffer_length = new_length;
+
+    memset(buffer + old_length, 0, length_diff);
+    return true;
 }
 
 SavestateWriter::SavestateWriter(Savestate &state) :
@@ -151,8 +155,11 @@ void SavestateWriter::Section(const char *magic)
     VarArray((void*)magic, 4);
 
     // The next 4 bytes are the length, which we'll come back to later.
+    Var<u32>(0);
+
     // The 8 bytes afterward are reserved, so we skip them.
-    buffer_offset += 12;
+    Var<u32>(0);
+    Var<u32>(0);
 }
 
 void SavestateWriter::CloseCurrentSection()
