@@ -61,7 +61,7 @@ public:
     /// It is an error for this to be \c nullptr.
     /// @param buffer_length The size of \c buffer in bytes.
     ///
-    Savestate(SavestateMode mode, u8* buffer, size_t buffer_length);
+    Savestate(u8* buffer, size_t buffer_length);
 
     Savestate(const Savestate&) = delete;
 

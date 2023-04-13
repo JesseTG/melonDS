@@ -73,13 +73,12 @@ Savestate::Savestate(size_t initial_buffer_length) :
     WriteHeader();
 }
 
-Savestate::Savestate(SavestateMode mode, u8 *buffer, size_t buffer_length) :
+Savestate::Savestate(u8 *buffer, size_t buffer_length) :
     buffer(buffer),
     buffer_length(buffer_length),
     buffer_offset(0),
     version_major(0),
     version_minor(0),
-    mode(mode),
     owned_buffer(false),
     current_section(NO_SECTION),
     error(false),

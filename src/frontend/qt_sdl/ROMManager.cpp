@@ -57,6 +57,7 @@ std::string PreviousSaveFile = "";
 ARCodeFile* CheatFile = nullptr;
 bool CheatsOn = false;
 
+Savestate BackupState;
 
 int LastSep(std::string path)
 {
@@ -290,35 +291,60 @@ bool SavestateExists(int slot)
 
 bool LoadState(std::string filename)
 {
-    // backup
-    Savestate* backup = new Savestate("timewarp.mln", true);
-    NDS::DoSavestate(backup);
-    delete backup;
+    bool success = true;
+    size_t state_file_size = 0;
+    u8* state_buffer = nullptr;
 
-    bool failed = false;
-
-    Savestate* state = new Savestate(filename, false);
-    if (state->Error())
+    // Open the requested savestate file
+    FILE* state_file = Platform::OpenFile(filename, "rb", true);
+    if (!state_file)
     {
-        delete state;
-
-        // current state might be crapoed, so restore from sane backup
-        state = new Savestate("timewarp.mln", false);
-        failed = true;
+        Platform::Log(Platform::Error, "Could not open savestate file %s", filename.c_str());
+        success = false;
+        goto done;
+        // No need to restore the backup state,
+        // we haven't unloaded the emulator's current state yet
     }
 
-    bool res = NDS::DoSavestate(state);
-    delete state;
-
-    if (!res)
+    state_file_size = Platform::GetFileSize(state_file);
+    if (state_file_size == 0)
     {
-        failed = true;
-        state = new Savestate("timewarp.mln", false);
-        NDS::DoSavestate(state);
-        delete state;
+        Platform::Log(Platform::Error, "Savestate file %s is empty, or there was an error getting its size", filename.c_str());
+        success = false;
+        goto done;
+        // No need to restore the backup state,
+        // we haven't unloaded the emulator's current state yet
     }
 
-    if (failed) return false;
+    // Now that the file's open, load it into memory
+    state_buffer = new u8[state_file_size];
+    if (state_buffer == nullptr)
+    {
+        Platform::Log(Platform::Error, "Could not allocate %d bytes for savestate file %s", state_file_size, filename.c_str());
+        success = false;
+        goto done;
+        // No need to restore the backup state,
+        // we haven't unloaded the emulator's current state yet
+    }
+
+    // Back up the current state to memory in case the loading process fails
+    // or the user wants to undo it
+    NDS::SaveState(BackupState);
+
+    // Now that we have the loaded state itself, let's load it
+    { // Wrap this section in a block so goto can skip it
+        Savestate state(state_buffer, state_file_size);
+        success = NDS::LoadState(state);
+
+        if (!success)
+        {
+            // The load failed, so we restore the state from the backup
+            NDS::LoadState(BackupState);
+            goto done;
+        }
+    }
+
+    if (!success) goto done;
 
     if (Config::SavestateRelocSRAM && NDSSave)
     {
@@ -331,21 +357,40 @@ bool LoadState(std::string filename)
     }
 
     SavestateLoaded = true;
+    // Why use goto for cleanup?
+    // Because very little code in melonDS reports errors by throwing exceptions,
+    // and I want to ensure that everything is cleaned up properly.
+done:
+    if (state_file)
+    {
+        fclose(state_file);
+    }
 
-    return true;
+    delete[] state_buffer; // It's okay to delete null pointers, it's a no-op
+
+    return success;
 }
 
 bool SaveState(std::string filename)
 {
-    Savestate* state = new Savestate(filename, true);
-    if (state->Error())
+    Savestate state;
+    if (!NDS::SaveState(state))
     {
-        delete state;
         return false;
     }
 
-    NDS::DoSavestate(state);
-    delete state;
+    FILE* state_file = Platform::OpenFile(filename, "wb");
+    if (state_file == nullptr)
+    {
+        return false;
+    }
+
+    size_t bytes_written = fwrite(state.GetBuffer(), 1, state.BufferLength(), state_file);
+    fclose(state_file);
+    if (bytes_written < state.BufferLength())
+    {
+        return false;
+    }
 
     if (Config::SavestateRelocSRAM && NDSSave)
     {
@@ -365,9 +410,7 @@ void UndoStateLoad()
     // pray that this works
     // what do we do if it doesn't???
     // but it should work.
-    Savestate* backup = new Savestate("timewarp.mln", false);
-    NDS::DoSavestate(backup);
-    delete backup;
+    NDS::LoadState(BackupState);
 
     if (NDSSave && (!PreviousSaveFile.empty()))
     {
