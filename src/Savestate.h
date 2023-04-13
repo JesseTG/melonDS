@@ -42,8 +42,6 @@ class Savestate final
 public:
     static constexpr size_t DEFAULT_BUFFER_LENGTH = 8 * 1000 * 1000; // 8 MB
 
-    [[deprecated]] Savestate(std::string filename, bool save);
-
     /// Initializes a \c Savestate in save mode with an internally-managed buffer.
     /// @param initial_buffer_length The initial size of the buffer.
     /// If it's full, a new one that's twice as large will be allocated.
@@ -71,18 +69,14 @@ public:
     /// An externally-owned buffer will \em not be freed.
     ~Savestate();
 
-    [[nodiscard, deprecated]] bool Error() const { return error; }
+    [[nodiscard, deprecated]] bool Error() const { return false; }
 
-    [[nodiscard, deprecated]] bool Saving() const { return mode == SavestateMode::Save; }
+    [[nodiscard, deprecated]] bool Saving() const { return false; }
 
     /// @returns The length of the allocated memory in bytes,
     /// \em not the number of bytes written to it.
     /// TODO save vs load
     [[nodiscard]] size_t BufferLength() const { return buffer_length; }
-
-    /// @returns The number of bytes written
-    /// TODO save vs load
-    [[nodiscard, deprecated]] size_t Length() const { return buffer_offset; }
 
     /// @returns The address of the underlying buffer.
     /// @warning Do \em not save this pointer,
@@ -102,22 +96,18 @@ public:
 
     [[deprecated]] void Var8(u8* var)
     {
-        VarArray(var, sizeof(*var));
     }
 
     [[deprecated]] void Var16(u16* var)
     {
-        VarArray(var, sizeof(*var));
     }
 
     [[deprecated]] void Var32(u32* var)
     {
-        VarArray(var, sizeof(*var));
     }
 
     [[deprecated]] void Var64(u64* var)
     {
-        VarArray(var, sizeof(*var));
     }
 
     [[deprecated]] void Bool32(bool* var)
@@ -145,16 +135,6 @@ public:
     /// @param len The size of the buffer given by \c data.
     [[deprecated]] void VarArray(void* data, u32 len);
 
-    /// TODO
-    /// intended for writing to disk or copying to another buffer
-    /// @note A pointer to the buffer isn't directly exposed because it may vary over time,
-    /// e.g. when reallocating the underlying memory.
-    /// @warning do not save the pointer, it can change
-    [[deprecated]] bool ProcessData(const std::function<bool(const u8*, u32)>& function) const
-    {
-        return function(buffer, buffer_offset);
-    }
-
     /// Finishes writing the savestate.
     /// Specifically, this function writes the length in the state's header
     /// and in the current section (if any).
@@ -164,34 +144,13 @@ public:
 
     [[nodiscard]] bool IsAtLeastVersion(u32 major, u32 minor) const
     {
-        if (version_major > major) return true;
-        if (version_major == major && version_minor >= minor) return true;
         return false;
     }
-
-    /// TODO
-    /// Returns a function that saves data to the file.
-    /// Intended for use by ::ProcessData.
-    /// \param filename
-    /// \return
-    [[deprecated]] static std::function<bool(const u8*, u32)> SaveFunction(std::string filename);
 
 private:
     u8* buffer;
     u32 buffer_length;
-    [[deprecated]] u32 buffer_offset;
-    // Index of the first byte in the current section's header
-    [[deprecated]] u32 current_section;
-    [[deprecated]] u32 version_major;
-    [[deprecated]] u32 version_minor;
-    [[deprecated]] bool error;
-    [[deprecated]] SavestateMode mode;
     bool owned_buffer;
-    [[deprecated]] bool closed;
-
-    [[deprecated]] void WriteHeader();
-
-    [[deprecated]] void CloseCurrentSection();
 
     /// Resizes the buffer to the given length.
     /// @param new_length The new length of the buffer in bytes.
