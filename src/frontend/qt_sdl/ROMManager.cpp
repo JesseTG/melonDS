@@ -294,12 +294,13 @@ bool LoadState(std::string filename)
     bool success = true;
     size_t state_file_size = 0;
     u8* state_buffer = nullptr;
+    size_t bytes_read = 0;
 
     // Open the requested savestate file
     FILE* state_file = Platform::OpenFile(filename, "rb", true);
     if (!state_file)
     {
-        Platform::Log(Platform::Error, "Could not open savestate file %s", filename.c_str());
+        Platform::Log(Platform::Error, "Could not open savestate file %s\n", filename.c_str());
         success = false;
         goto done;
         // No need to restore the backup state,
@@ -309,7 +310,7 @@ bool LoadState(std::string filename)
     state_file_size = Platform::GetFileSize(state_file);
     if (state_file_size == 0)
     {
-        Platform::Log(Platform::Error, "Savestate file %s is empty, or there was an error getting its size", filename.c_str());
+        Platform::Log(Platform::Error, "Savestate file %s is empty, or there was an error getting its size\n", filename.c_str());
         success = false;
         goto done;
         // No need to restore the backup state,
@@ -320,7 +321,17 @@ bool LoadState(std::string filename)
     state_buffer = new u8[state_file_size];
     if (state_buffer == nullptr)
     {
-        Platform::Log(Platform::Error, "Could not allocate %d bytes for savestate file %s", state_file_size, filename.c_str());
+        Platform::Log(Platform::Error, "Could not allocate %d bytes for savestate file %s\n", state_file_size, filename.c_str());
+        success = false;
+        goto done;
+        // No need to restore the backup state,
+        // we haven't unloaded the emulator's current state yet
+    }
+
+    bytes_read = fread(state_buffer, state_file_size, 1, state_file);
+    if (bytes_read != 1)
+    {
+        Platform::Log(Platform::Error, "Could not read %d bytes from savestate file %s\n", state_file_size, filename.c_str());
         success = false;
         goto done;
         // No need to restore the backup state,
@@ -331,7 +342,7 @@ bool LoadState(std::string filename)
     // or the user wants to undo it
     NDS::SaveState(BackupState);
 
-    // Now that we have the loaded state itself, let's load it
+    // Now that we've loaded the state file into memory, let's load it into the emulator
     { // Wrap this section in a block so goto can skip it
         Savestate state(state_buffer, state_file_size);
         success = NDS::LoadState(state);
