@@ -1035,7 +1035,7 @@ bool DoSavestate(Savestate* file)
 
 bool SaveState(Savestate& file)
 {
-    SavestateWriter writer(&file);
+    SavestateWriter writer(file);
     writer.Section("NDSG");
 
     u32 console = ConsoleType;
@@ -1138,7 +1138,7 @@ bool SaveState(Savestate& file)
 
 bool LoadState(const Savestate& state)
 {
-    SavestateReader reader(&state);
+    SavestateReader reader(state);
     reader.Section("NDSG");
 
     u32 console;

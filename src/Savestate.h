@@ -32,6 +32,11 @@ enum class [[deprecated]] SavestateMode {
     Save,
 };
 
+class SavestateWriter;
+
+/// Contains a buffer that's used to serialize the state of the emulated Nintendo DS.
+/// May be created with its own buffer, or with an externally-managed one.
+// TODO rename to SavestateBuffer
 class Savestate final
 {
 public:
@@ -59,7 +64,6 @@ public:
     Savestate(SavestateMode mode, u8* buffer, size_t buffer_length);
 
     Savestate(const Savestate&) = delete;
-    Savestate(Savestate&& other);
 
     /// Cleans up all state.
     /// If this \c Savestate manages its own buffer,
@@ -67,7 +71,7 @@ public:
     /// An externally-owned buffer will \em not be freed.
     ~Savestate();
 
-    [[nodiscard]] bool Error() const { return error; }
+    [[nodiscard, deprecated]] bool Error() const { return error; }
 
     [[nodiscard, deprecated]] bool Saving() const { return mode == SavestateMode::Save; }
 
@@ -78,7 +82,20 @@ public:
 
     /// @returns The number of bytes written
     /// TODO save vs load
-    [[nodiscard]] size_t Length() const { return buffer_offset; }
+    [[nodiscard, deprecated]] size_t Length() const { return buffer_offset; }
+
+    /// @returns The address of the underlying buffer.
+    /// @warning Do \em not save this pointer,
+    /// it can change when the referred buffer is resized.
+    [[nodiscard]] u8* GetBuffer() { return buffer; }
+
+    /// @returns The address of the underlying buffer.
+    /// @warning Do \em not save this pointer if writing to the buffer,
+    /// it can change when the referred buffer is resized.
+    [[nodiscard]] const u8* GetBuffer() const { return buffer; }
+
+    // TODO rename to IsMemoryOwned
+    [[nodiscard]] bool IsBufferOwned() const { return owned_buffer; }
 
     /// TODO writes a section or advances to this section
     [[deprecated]] void Section(const char* magic);
@@ -133,7 +150,7 @@ public:
     /// @note A pointer to the buffer isn't directly exposed because it may vary over time,
     /// e.g. when reallocating the underlying memory.
     /// @warning do not save the pointer, it can change
-    bool ProcessData(const std::function<bool(const u8*, u32)>& function) const
+    [[deprecated]] bool ProcessData(const std::function<bool(const u8*, u32)>& function) const
     {
         return function(buffer, buffer_offset);
     }
@@ -157,71 +174,108 @@ public:
     /// Intended for use by ::ProcessData.
     /// \param filename
     /// \return
-    static std::function<bool(const u8*, u32)> SaveFunction(std::string filename);
+    [[deprecated]] static std::function<bool(const u8*, u32)> SaveFunction(std::string filename);
 
 private:
     u8* buffer;
     u32 buffer_length;
-    u32 buffer_offset;
+    [[deprecated]] u32 buffer_offset;
     // Index of the first byte in the current section's header
-    u32 current_section;
-    u32 version_major;
-    u32 version_minor;
-    bool error;
-    SavestateMode mode;
+    [[deprecated]] u32 current_section;
+    [[deprecated]] u32 version_major;
+    [[deprecated]] u32 version_minor;
+    [[deprecated]] bool error;
+    [[deprecated]] SavestateMode mode;
     bool owned_buffer;
-    bool closed;
+    [[deprecated]] bool closed;
 
-    void WriteHeader();
+    [[deprecated]] void WriteHeader();
 
-    void CloseCurrentSection();
+    [[deprecated]] void CloseCurrentSection();
+
+    /// Resizes the buffer to the given length.
+    /// @param new_length The new length of the buffer in bytes.
+    /// @returns \c true if the buffer was resized successfully.
+    bool Resize(u32 new_length);
+
+    friend class SavestateWriter;
 };
 
-/// Writes the emulator's state to the provided buffer.
-/// TODO not intended to live for long
+/// Use this class to serialize the emulated console state.
+/// Multiple \c SavestateWriters can operate on the same \c Savestate
+/// at different points in time, should you wish to reduce memory allocations.
 class SavestateWriter final
 {
 public:
-    explicit SavestateWriter(Savestate *state);
+    /// Constructs a \c SavestateWriter that writes to the given \c Savestate,
+    /// starting with the savestate's header.
+    /// @param state The \c Savestate to write to.
+    /// It \em must live longer than this \c SavestateWriter,
+    /// or else you will get undefined behavior.
+    /// @note \c state might be resized by this \c SavestateWriter if it's full,
+    /// unless it was constructed with an externally-owned buffer.
+    explicit SavestateWriter(Savestate& state);
 
-    SavestateWriter(u8* buffer, size_t buffer_length);
+    /// \c SavestateWriter cannot be copied.
+    SavestateWriter& operator= (const SavestateWriter&) = delete;
 
+    /// \c SavestateWriter cannot be copied.
+    SavestateWriter(const SavestateWriter&) = delete;
+
+    /// Writes a section header to the \c Savestate.
+    /// @note May expand the \c Savestate's buffer if it's internally-owned.
+    /// @param magic A string that uniquely identifies this section.
+    /// It must be exactly four characters long, not counting the null terminator.
     void Section(const char* magic);
 
+    /// Writes a value to the \c Savestate,
+    /// expanding the underlying buffer if necessary and possible.
+    /// @tparam T The type of the value to write.
+    /// Must be an integer (including char and bool) or an enum;
+    /// anything else is a compiler error.
+    /// This can usually be deduced automatically,
+    /// but you can specify it explicitly.
+    /// @param var The value to write.
     template<class T>
     void Var(T var)
     {
+        static_assert(std::is_integral_v<T> || std::is_enum_v<T>, "Only integers and enums can be written to save states");
         static_assert(!std::is_pointer_v<T>, "Pointers cannot be written to save states (double-check your casts)");
         VarArray(&var, sizeof(var));
     }
 
-    void Var8(u8 var)
+    [[deprecated("Use Var<u8> instead")]] void Var8(u8 var)
     {
         VarArray(&var, sizeof(var));
     }
 
-    void Var16(u16 var)
+    [[deprecated("Use Var<u16> instead")]] void Var16(u16 var)
     {
         VarArray(&var, sizeof(var));
     }
 
-    void Var32(u32 var)
+    [[deprecated("Use Var<u32> instead")]] void Var32(u32 var)
     {
         VarArray(&var, sizeof(var));
     }
 
-    void Var64(u64 var)
+    [[deprecated("Use Var<u64> instead")]] void Var64(u64 var)
     {
         VarArray(&var, sizeof(var));
     }
 
+    /// Older savestates used 32-bit values to represent some booleans.
+    /// This function is provided for compatibility with those.
     void Bool32(bool var)
     {
         // for compatibility
-        u32 val = var;
-        Var32(val);
+        Var<u32>(var);
     }
 
+    /// Writes the given data to the \c Savestate.
+    /// @param[in] data The data to write.
+    /// @param len The size of the data given by \c data, in bytes.
+    /// @note Does nothing if \c data is \c nullptr or \c len is zero.
     void VarArray(const void* data, u32 len);
 
     [[nodiscard]] bool IsAtLeastVersion(u32 major, u32 minor) const
@@ -231,58 +285,65 @@ public:
         return false;
     }
 
+    /// Finishes writing the savestate.
+    /// Specifically, this function closes the current section
+    /// and writes the state's overall length in its header.
     void Finish();
 
 private:
-    Savestate* state;
+    Savestate& state;
     u32 buffer_offset;
     // Index of the first byte in the current section's header
     u32 current_section;
-    u32 version_major;
-    u32 version_minor;
+    u16 version_major;
+    u16 version_minor;
     bool error;
-    SavestateMode mode;
-    bool owned_buffer;
     bool closed;
-
-    void WriteHeader();
 
     void CloseCurrentSection();
 };
 
+/// Use this class to deserialize the emulated console state.
+/// This class does not modify the \c Savestate it's given.
+/// TODO SFINAE
 class SavestateReader final
 {
 public:
-    explicit SavestateReader(const Savestate *state);
+    explicit SavestateReader(const Savestate &state);
+    /// \c SavestateReader cannot be copied.
+    SavestateReader& operator= (const SavestateReader&) = delete;
 
-    SavestateReader(u8* buffer, size_t buffer_length);
+    /// \c SavestateReader cannot be copied.
+    SavestateReader(const SavestateReader&) = delete;
 
     void Section(const char* magic);
 
+    /// TODO write docs
+    /// TODO talk about sfinae
     template<class T>
     void Var(T& var)
     {
-        static_assert(!std::is_pointer_v<T>, "Pointers cannot be read from save states (double-check your casts)");
-        static_assert(!std::is_reference_v<T>, "References cannot be read from save states");
+        static_assert(std::is_integral_v<T> || std::is_enum_v<T>, "Only integers and enums can be written to save states");
+        static_assert(!std::is_pointer_v<T>, "Pointers cannot be written to save states (double-check your casts)");
         VarArray(&var, sizeof(var));
     }
 
-    void Var8(u8& var)
+    [[deprecated("Use Var<u8> instead")]] void Var8(u8& var)
     {
         VarArray(&var, sizeof(var));
     }
 
-    void Var16(u16& var)
+    [[deprecated("Use Var<u16> instead")]] void Var16(u16& var)
     {
         VarArray(&var, sizeof(var));
     }
 
-    void Var32(u32& var)
+    [[deprecated("Use Var<u32> instead")]] void Var32(u32& var)
     {
         VarArray(&var, sizeof(var));
     }
 
-    void Var64(u64& var)
+    [[deprecated("Use Var<u64> instead")]] void Var64(u64& var)
     {
         VarArray(&var, sizeof(var));
     }
@@ -291,7 +352,7 @@ public:
     {
         // for compatibility
         u32 val;
-        Var32(val);
+        Var<u32>(val);
         var = val != 0;
     }
 
@@ -307,20 +368,13 @@ public:
     void Finish();
 
 private:
-    Savestate* state;
+    const Savestate& state;
     u32 buffer_offset;
     // Index of the first byte in the current section's header
-    u32 current_section;
-    u32 version_major;
-    u32 version_minor;
+    u16 version_major;
+    u16 version_minor;
     bool error;
-    SavestateMode mode;
-    bool owned_buffer;
     bool closed;
-
-    void WriteHeader();
-
-    void CloseCurrentSection();
 };
 
 #endif // SAVESTATE_H

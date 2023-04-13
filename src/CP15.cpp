@@ -124,6 +124,32 @@ void ARMv5::CP15SaveState(SavestateWriter& writer) const
     writer.VarArray(PU_Region, sizeof(PU_Region));
 }
 
+void ARMv5::CP15LoadState(SavestateReader& reader)
+{
+    reader.Section("CP15");
+
+    reader.Var32(CP15Control);
+
+    reader.Var32(DTCMSetting);
+    reader.Var32(ITCMSetting);
+
+    reader.VarArray(ITCM, ITCMPhysicalSize);
+    reader.VarArray(DTCM, DTCMPhysicalSize);
+
+    reader.Var32(PU_CodeCacheable);
+    reader.Var32(PU_DataCacheable);
+    reader.Var32(PU_DataCacheWrite);
+
+    reader.Var32(PU_CodeRW);
+    reader.Var32(PU_DataRW);
+
+    reader.VarArray(PU_Region, sizeof(PU_Region));
+
+    UpdateDTCMSetting();
+    UpdateITCMSetting();
+    UpdatePURegions(true);
+}
+
 void ARMv5::UpdateDTCMSetting()
 {
     u32 newDTCMBase;
