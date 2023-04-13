@@ -40,7 +40,7 @@ class SavestateWriter;
 class Savestate final
 {
 public:
-    static constexpr size_t DEFAULT_BUFFER_LENGTH = 8 * 1000 * 1000; // 8 MB
+    static constexpr size_t DEFAULT_BUFFER_LENGTH = 32 * 1000 * 1000; // 32 MB
 
     /// Initializes a \c Savestate in save mode with an internally-managed buffer.
     /// @param initial_buffer_length The initial size of the buffer.
