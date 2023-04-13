@@ -182,12 +182,14 @@ void SavestateWriter::VarArray(const void* data, u32 len)
     { // If writing the given data would take us past the buffer's end...
         Log(LogLevel::Warn, "savestate: %u-byte write would exceed %u-byte savestate buffer\n", len, state.BufferLength());
 
-        if (!(state.IsBufferOwned() && state.Resize(state.BufferLength() * 2)))
+        if (!(state.IsBufferOwned() && state.Resize(state.BufferLength() * 2 + len)))
         { // If we're not allowed to resize this buffer, or if we are but failed...
             Log(LogLevel::Error, "savestate: Failed to write %d bytes to savestate\n", len);
             error = true;
             return;
         }
+        // The buffer's length is doubled, plus however much memory is needed for this write.
+        // This way we can write the data and reduce the chance of needing to resize again.
     }
 
     memcpy(state.GetBuffer() + buffer_offset, data, len);
