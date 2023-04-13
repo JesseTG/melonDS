@@ -78,6 +78,31 @@ public:
     /// TODO save vs load
     [[nodiscard]] size_t BufferLength() const { return buffer_length; }
 
+    /// Returns the length of the savestate, as indicated by the header
+    [[nodiscard]] u32 StateLength() const
+    {
+        // length is stored at offset 0x08
+        u32 length = 0;
+        memcpy(&length, buffer + 0x08, sizeof(length));
+        return length;
+    }
+
+    [[nodiscard]] u16 MajorVersion() const
+    {
+        // major version is stored at offset 0x04
+        u16 major = 0;
+        memcpy(&major, buffer + 0x04, sizeof(major));
+        return major;
+    }
+
+    [[nodiscard]] u16 MinorVersion() const
+    {
+        // minor version is stored at offset 0x06
+        u16 minor = 0;
+        memcpy(&minor, buffer + 0x06, sizeof(minor));
+        return minor;
+    }
+
     /// @returns The address of the underlying buffer.
     /// @warning Do \em not save this pointer,
     /// it can change when the referred buffer is resized.
