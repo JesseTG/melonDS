@@ -778,11 +778,12 @@ void Init()
         Log(LogLevel::Error, "Failed to open memory using shm_open! (%s)", strerror(errno));
     }
     shm_unlink(fastmemPidName);
-#endif
+
     if (ftruncate(MemoryFile, MemoryTotalSize) < 0)
     {
         Log(LogLevel::Error, "Failed to allocate memory using ftruncate! (%s)", strerror(errno));
     }
+#endif
 
     struct sigaction sa;
     sa.sa_handler = nullptr;
