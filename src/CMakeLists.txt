@@ -52,7 +52,6 @@ add_library(core STATIC
     Wifi.cpp
     WifiAP.cpp
 
-    fatfs/diskio.c
     fatfs/ff.c
     fatfs/ffsystem.c
     fatfs/ffunicode.c
