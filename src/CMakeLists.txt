@@ -26,6 +26,7 @@ add_library(core STATIC
     DSi_SD.cpp
     DSi_SPI_TSC.cpp
     FATStorage.cpp
+    FATIO.cpp
     FIFO.h
     GBACart.cpp
     GPU.cpp
