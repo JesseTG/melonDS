@@ -107,7 +107,7 @@ enum ConfigEntry
 
     ExternalBIOSEnable,
 
-    DSi_NANDPath,
+    DSi_NANDPath [[deprecated("No longer needed by the core")]],
 
     DLDI_Enable,
     DLDI_ImagePath,
