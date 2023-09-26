@@ -20,6 +20,7 @@
 
 #include "fatfs/ff.h"
 #include "fatfs/diskio.h"
+#include "Platform.h"
 
 /// The physical drive number of the mounted DSi NAND.
 constexpr BYTE DSI_NAND_PDRV = 0;
@@ -165,8 +166,9 @@ DRESULT disk_ioctl (
     case CTRL_TRIM:
         // TODO??
         return RES_OK;
-    }
 
- //printf("FatFS: unknown disk_ioctl(%02X, %02X, %p)\n", pdrv, cmd, buff);
-    return RES_PARERR;
+    default:
+        Platform::Log(Platform::LogLevel::Error, "FatFS: unknown disk_ioctl(%02X, %02X, %p)\n", pdrv, cmd, buff);
+        return RES_PARERR;
+    }
 }
