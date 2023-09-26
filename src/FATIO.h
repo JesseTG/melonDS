@@ -19,12 +19,13 @@
 #ifndef FATIO_H
 #define FATIO_H
 
+#include <functional>
 #include "fatfs/ff.h"
 
 // extra additions for interfacing with melonDS
 
-[[deprecated]] typedef UINT (*ff_disk_read_cb)(BYTE* buff, LBA_t sector, UINT count);
-[[deprecated]] typedef UINT (*ff_disk_write_cb)(BYTE* buff, LBA_t sector, UINT count);
+using ff_disk_read_cb [[deprecated]] = std::function<UINT(BYTE* buff, LBA_t sector, UINT count)>;
+using ff_disk_write_cb [[deprecated]] = std::function<UINT(BYTE* buff, LBA_t sector, UINT count)>;
 
 [[deprecated]] void ff_disk_open(ff_disk_read_cb readcb, ff_disk_write_cb writecb, LBA_t seccnt);
 [[deprecated]] void ff_disk_close(void);
