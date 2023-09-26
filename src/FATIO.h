@@ -24,10 +24,10 @@
 
 // extra additions for interfacing with melonDS
 
-using ff_disk_read_cb [[deprecated]] = std::function<UINT(BYTE* buff, LBA_t sector, UINT count)>;
-using ff_disk_write_cb [[deprecated]] = std::function<UINT(BYTE* buff, LBA_t sector, UINT count)>;
+using ff_disk_read_cb [[deprecated("Use the arguments to disk_read to select an image to use")]] = std::function<UINT(BYTE* buff, LBA_t sector, UINT count)>;
+using ff_disk_write_cb [[deprecated("Use the arguments to disk_read to select an image to use")]] = std::function<UINT(BYTE* buff, LBA_t sector, UINT count)>;
 
-[[deprecated]] void ff_disk_open(ff_disk_read_cb readcb, ff_disk_write_cb writecb, LBA_t seccnt);
-[[deprecated]] void ff_disk_close(void);
+[[deprecated("Use the arguments to disk_read to select an image to use")]] void ff_disk_open(ff_disk_read_cb readcb, ff_disk_write_cb writecb, LBA_t seccnt);
+[[deprecated("Use the arguments to disk_read to select an image to use")]] void ff_disk_close(void);
 
 #endif // FATIO_H
