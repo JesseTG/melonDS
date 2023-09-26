@@ -1079,6 +1079,7 @@ bool LoadROM(QStringList filepath, bool reset)
     BaseROMName = romname;
     BaseAssetName = romname.substr(0, romname.rfind('.'));
 
+    LoadBIOSFiles();
     if (!InstallFirmware())
     {
         return false;
@@ -1088,7 +1089,6 @@ bool LoadROM(QStringList filepath, bool reset)
     {
         NDS::SetConsoleType(Config::ConsoleType);
         NDS::EjectCart();
-        LoadBIOSFiles();
         NDS::Reset();
         SetBatteryLevels();
     }
