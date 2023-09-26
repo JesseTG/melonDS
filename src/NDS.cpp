@@ -514,7 +514,6 @@ void SetupDirectBoot(const std::string& romname)
 
 void Reset()
 {
-    Platform::FileHandle* f;
     u32 i;
 
 #ifdef JIT_ENABLED
