@@ -16,6 +16,8 @@
     with melonDS. If not, see http://www.gnu.org/licenses/.
 */
 
+#include "FATIO.h"
+
 #include <time.h>
 
 #include "fatfs/ff.h"

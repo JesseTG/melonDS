@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "FATStorage.h"
+#include "FATIO.h"
 #include "Platform.h"
 
 namespace fs = std::filesystem;
