@@ -26,10 +26,10 @@
 constexpr BYTE DSI_NAND_PDRV = 0;
 
 /// The physical drive number of the mounted DSi SD card.
-constexpr BYTE DSI_SD_CARD_DRIVE = 1;
+constexpr BYTE DSI_SD_CARD_PDRV = 1;
 
 /// The physical drive number of the DLDI homebrew SD card.
-constexpr BYTE DLDI_SD_CARD_DRIVE = 2;
+constexpr BYTE DLDI_SD_CARD_PDRV = 2;
 
 
 static ff_disk_read_cb ReadCb;
