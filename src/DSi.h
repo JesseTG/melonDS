@@ -19,8 +19,11 @@
 #ifndef DSI_H
 #define DSI_H
 
+#include <array>
+
 #include "NDS.h"
 #include "DSi_SD.h"
+#include "DSi_NAND.h"
 
 namespace DSi
 {
@@ -33,7 +36,7 @@ extern u32 SCFG_EXT[2];
 extern u8 ARM9iBIOS[0x10000];
 extern u8 ARM7iBIOS[0x10000];
 
-extern u8 eMMC_CID[16];
+extern std::array<u8, 16> eMMC_CID;
 extern u64 ConsoleID;
 
 extern DSi_SDHost* SDMMC;
@@ -65,7 +68,7 @@ void SetCartInserted(bool inserted);
 void SetupDirectBoot();
 void SoftReset();
 
-bool LoadNAND();
+extern std::unique_ptr<DSi_NAND::NANDFileSystem> NAND;
 
 void RunNDMAs(u32 cpu);
 void StallNDMAs();

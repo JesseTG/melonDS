@@ -29,7 +29,11 @@
 #include <QNetworkReply>
 #include <QNetworkAccessManager>
 
+#include <memory>
+
 #include "DSi_TMD.h"
+#include "DSi_NAND.h"
+
 
 namespace Ui
 {
@@ -47,7 +51,7 @@ public:
     explicit TitleManagerDialog(QWidget* parent);
     ~TitleManagerDialog();
 
-    static bool NANDInited;
+    static std::unique_ptr<DSi_NAND::NANDFileSystem> nand;
     static bool openNAND();
     static void closeNAND();
 
@@ -106,7 +110,7 @@ class TitleImportDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit TitleImportDialog(QWidget* parent, QString& apppath, const DSi_TMD::TitleMetadata* tmd, bool& readonly);
+    explicit TitleImportDialog(QWidget* parent, QString& apppath, const DSi_TMD::TitleMetadata* tmd, bool& readonly, std::unique_ptr<DSi_NAND::NANDFileSystem>& nand);
     ~TitleImportDialog();
 
 private slots:
@@ -128,6 +132,7 @@ private:
     QString& appPath;
     const DSi_TMD::TitleMetadata* tmdData;
     bool& readOnly;
+    std::unique_ptr<DSi_NAND::NANDFileSystem>& nand;
 
     u32 titleid[2];
 };

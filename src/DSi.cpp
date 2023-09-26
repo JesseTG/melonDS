@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <memory>
 #include "NDS.h"
 #include "DSi.h"
 #include "ARM.h"
@@ -44,6 +45,7 @@
 #include "tiny-AES-c/aes.hpp"
 
 using namespace Platform;
+using std::unique_ptr;
 
 namespace DSi
 {
@@ -75,11 +77,12 @@ u32 NWRAMMask[2][3];
 u32 NDMACnt[2];
 DSi_NDMA* NDMAs[8];
 
+unique_ptr<DSi_NAND::NANDFileSystem> NAND;
 DSi_SDHost* SDMMC;
 DSi_SDHost* SDIO;
 
 u64 ConsoleID;
-u8 eMMC_CID[16];
+std::array<u8, 16> eMMC_CID;
 
 // FIXME: these currently have no effect (and aren't stored in a savestate)
 //        ... not that they matter all that much
@@ -92,7 +95,7 @@ u8 GPIO_WiFi;
 
 void Set_SCFG_Clock9(u16 val);
 void Set_SCFG_MC(u32 val);
-
+bool SetupNAND();
 
 bool Init()
 {
@@ -145,6 +148,8 @@ void DeInit()
         NDMAs[i] = nullptr;
     }
 
+    NAND = nullptr;
+
     delete SDMMC;
     SDMMC = nullptr;
     delete SDIO;
@@ -169,7 +174,7 @@ void Reset()
     SDMMC->CloseHandles();
     SDIO->CloseHandles();
 
-    LoadNAND();
+    SetupNAND();
 
     SDMMC->Reset();
     SDIO->Reset();
@@ -528,24 +533,26 @@ void SetupDirectBoot()
             ARM9Write32(0x02FFE000+i, tmp);
         }
 
-        if (DSi_NAND::Init(&DSi::ARM7iBIOS[0x8308]))
+        if (NAND)
         {
             u8 userdata[0x1B0];
-            DSi_NAND::ReadUserData(userdata);
+            NAND->ReadUserData(userdata);
             for (u32 i = 0; i < 0x128; i+=4)
                 ARM9Write32(0x02000400+i, *(u32*)&userdata[0x88+i]);
 
             u8 hwinfoS[0xA4];
             u8 hwinfoN[0x9C];
-            DSi_NAND::ReadHardwareInfo(hwinfoS, hwinfoN);
+            NAND->ReadHardwareInfo(hwinfoS, hwinfoN);
 
             for (u32 i = 0; i < 0x14; i+=4)
                 ARM9Write32(0x02000600+i, *(u32*)&hwinfoN[0x88+i]);
 
             for (u32 i = 0; i < 0x18; i+=4)
                 ARM9Write32(0x02FFFD68+i, *(u32*)&hwinfoS[0x88+i]);
-
-            DSi_NAND::DeInit();
+        }
+        else
+        {
+            Platform::Log(Platform::LogLevel::Warn, "DSi: NAND not loaded!\n");
         }
 
         SPI_Firmware::WifiBoard nwifiver = SPI_Firmware::GetFirmware()->Header().WifiBoard;
@@ -696,7 +703,7 @@ void SoftReset()
     SDMMC->CloseHandles();
     SDIO->CloseHandles();
 
-    LoadNAND();
+    SetupNAND();
 
     SDMMC->Reset();
     SDIO->Reset();
@@ -726,17 +733,17 @@ void SoftReset()
     GPU::DispStat[1] |= (1<<6);
 }
 
-bool LoadNAND()
+bool SetupNAND()
 {
-    Log(LogLevel::Info, "Loading DSi NAND\n");
-
-    if (!DSi_NAND::Init(&DSi::ARM7iBIOS[0x8308]))
+    if (!NAND)
     {
-        Log(LogLevel::Error, "Failed to load DSi NAND\n");
+        Log(LogLevel::Error, "No NAND image loaded\n");
         return false;
     }
 
-    FileHandle* nand = DSi_NAND::GetFile();
+    Log(LogLevel::Info, "Initializing DSi NAND\n");
+
+    FileHandle* nandfile = NAND->GetFile();
 
     // Make sure NWRAM is accessible.
     // The Bits are set to the startup values in Reset() and we might
@@ -780,8 +787,8 @@ bool LoadNAND()
     }
     else
     {
-        FileSeek(nand, 0x220, FileSeekOrigin::Start);
-        FileRead(bootparams, 4, 8, nand);
+        FileSeek(nandfile, 0x220, FileSeekOrigin::Start);
+        FileRead(bootparams, 4, 8, nandfile);
 
         Log(LogLevel::Debug, "ARM9: offset=%08X size=%08X RAM=%08X size_aligned=%08X\n",
                bootparams[0], bootparams[1], bootparams[2], bootparams[3]);
@@ -794,8 +801,8 @@ bool LoadNAND()
         MBK[1][8] = 0;
 
         u32 mbk[12];
-        FileSeek(nand, 0x380, FileSeekOrigin::Start);
-        FileRead(mbk, 4, 12, nand);
+        FileSeek(nandfile, 0x380, FileSeekOrigin::Start);
+        FileRead(mbk, 4, 12, nandfile);
 
         MapNWRAM_A(0, mbk[0] & 0xFF);
         MapNWRAM_A(1, (mbk[0] >> 8) & 0xFF);
@@ -849,12 +856,12 @@ bool LoadNAND()
 
         AES_init_ctx_iv(&ctx, boot2key, boot2iv);
 
-        FileSeek(nand, bootparams[0], FileSeekOrigin::Start);
+        FileSeek(nandfile, bootparams[0], FileSeekOrigin::Start);
         dstaddr = bootparams[2];
         for (u32 i = 0; i < bootparams[3]; i += 16)
         {
             u32 data[4];
-            FileRead(data, 16, 1, nand);
+            FileRead(data, 16, 1, nandfile);
 
             Bswap128(tmp, data);
             AES_CTR_xcrypt_buffer(&ctx, tmp, 16);
@@ -874,12 +881,12 @@ bool LoadNAND()
 
         AES_init_ctx_iv(&ctx, boot2key, boot2iv);
 
-        FileSeek(nand, bootparams[4], FileSeekOrigin::Start);
+        FileSeek(nandfile, bootparams[4], FileSeekOrigin::Start);
         dstaddr = bootparams[6];
         for (u32 i = 0; i < bootparams[7]; i += 16)
         {
             u32 data[4];
-            FileRead(data, 16, 1, nand);
+            FileRead(data, 16, 1, nandfile);
 
             Bswap128(tmp, data);
             AES_CTR_xcrypt_buffer(&ctx, tmp, 16);
@@ -892,12 +899,13 @@ bool LoadNAND()
         }
     }
 
-#define printhex(str, size) { for (int z = 0; z < (size); z++) printf("%02X", (str)[z]); printf("\n"); }
-#define printhex_rev(str, size) { for (int z = (size)-1; z >= 0; z--) printf("%02X", (str)[z]); printf("\n"); }
+    eMMC_CID = NAND->GetEMMCCID();
+    ConsoleID = NAND->GetConsoleID();
 
-    DSi_NAND::GetIDs(eMMC_CID, ConsoleID);
-
-    Log(LogLevel::Debug, "eMMC CID: "); printhex(eMMC_CID, 16);
+    char cidstring[33];
+    for (int z = 0; z < 16; z++)
+        sprintf(&cidstring[z*2], "%02X", eMMC_CID[z]);
+    Log(LogLevel::Debug, "eMMC CID: %s\n", cidstring);
     Log(LogLevel::Debug, "Console ID: %" PRIx64 "\n", ConsoleID);
 
     if (Platform::GetConfigBool(Platform::DSi_FullBIOSBoot))
@@ -939,9 +947,7 @@ bool LoadNAND()
         NDS::ARM7->JumpTo(bootparams[6]);
     }
 
-    DSi_NAND::PatchUserData();
-
-    DSi_NAND::DeInit();
+    NAND->PatchUserData();
 
     return true;
 }

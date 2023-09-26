@@ -19,6 +19,7 @@
 #ifndef DSI_NAND_H
 #define DSI_NAND_H
 
+#include "fatfs/ff.h"
 #include "types.h"
 #include "NDS_Header.h"
 #include "DSi_TMD.h"
@@ -27,8 +28,16 @@
 #include <vector>
 #include <string>
 
+struct AES_ctx;
+
 namespace DSi_NAND
 {
+
+constexpr u32 MainPartitionOffset = 0x10EE00;
+constexpr u32 MainPartitionType = FS_FAT16;
+
+constexpr u32 PhotoPartitionOffset = 0x0CF09A00;
+constexpr u32 PhotoPartitionType = FS_FAT12;
 
 enum
 {
@@ -37,28 +46,72 @@ enum
     TitleData_BannerSav,
 };
 
-bool Init(u8* es_keyY);
-void DeInit();
+typedef std::array<u8, 16> AESKey;
 
-Platform::FileHandle* GetFile();
+/// Represents a raw DSi NAND image before it's mounted by fatfs.
+/// Since fatfs can only mount a limited number of file systems at once,
+/// file system operations can only be done on a mounted NAND image.
+class NANDImage
+{
+public:
+    static std::unique_ptr<NANDImage> New(const std::string& nandpath, const AESKey& es_keyY) noexcept;
+    static std::unique_ptr<NANDImage> New(Platform::FileHandle& nandfile, const AESKey& es_keyY) noexcept;
+};
 
-void GetIDs(u8* emmc_cid, u64& consoleid);
+class NANDFileSystem
+{
+public:
+    static std::unique_ptr<NANDFileSystem> New(Platform::FileHandle* nandfile, const AESKey& es_keyY) noexcept;
+    NANDFileSystem(const NANDFileSystem&) = delete;
+    NANDFileSystem(NANDFileSystem&&) noexcept;
+    NANDFileSystem& operator=(const NANDFileSystem&) = delete;
+    NANDFileSystem& operator=(NANDFileSystem&&) noexcept;
+    ~NANDFileSystem() noexcept;
 
-void ReadHardwareInfo(u8* dataS, u8* dataN);
+    [[nodiscard]] u64 GetConsoleID() const noexcept { return ConsoleID; }
+    [[nodiscard]] const std::array<u8, 16>& GetEMMCCID() const noexcept { return eMMC_CID; }
+    Platform::FileHandle* GetFile() noexcept { return CurFile; }
+    // TODO: Split everything that doesn't need a mounted file system into a NANDImage
+    // (I.e. data that's part of the image, but not part of the file system, like the console ID)
+    void ReadHardwareInfo(u8* dataS, u8* dataN);
 
-void ReadUserData(u8* data);
-void PatchUserData();
+    void ReadUserData(u8* data);
+    void PatchUserData();
+    void ListTitles(u32 category, std::vector<u32>& titlelist);
+    bool TitleExists(u32 category, u32 titleid);
+    void GetTitleInfo(u32 category, u32 titleid, u32& version, NDSHeader* header, NDSBanner* banner);
+    bool ImportTitle(const char* appfile, const DSi_TMD::TitleMetadata& tmd, bool readonly);
+    bool ImportTitle(const u8* app, size_t appLength, const DSi_TMD::TitleMetadata& tmd, bool readonly);
+    void DeleteTitle(u32 category, u32 titleid);
+    void RemoveFile(const char* path);
+    void RemoveDir(const char* path);
+    u32 GetTitleDataMask(u32 category, u32 titleid);
+    bool ImportTitleData(u32 category, u32 titleid, int type, const char* file);
+    bool ExportTitleData(u32 category, u32 titleid, int type, const char* file);
 
-void ListTitles(u32 category, std::vector<u32>& titlelist);
-bool TitleExists(u32 category, u32 titleid);
-void GetTitleInfo(u32 category, u32 titleid, u32& version, NDSHeader* header, NDSBanner* banner);
-bool ImportTitle(const char* appfile, const DSi_TMD::TitleMetadata& tmd, bool readonly);
-bool ImportTitle(const u8* app, size_t appLength, const DSi_TMD::TitleMetadata& tmd, bool readonly);
-void DeleteTitle(u32 category, u32 titleid);
-
-u32 GetTitleDataMask(u32 category, u32 titleid);
-bool ImportTitleData(u32 category, u32 titleid, int type, const char* file);
-bool ExportTitleData(u32 category, u32 titleid, int type, const char* file);
+    // Temporarily public
+    u32 ReadFATBlock(u64 addr, u32 len, u8* buf) noexcept;
+    u32 WriteFATBlock(u64 addr, u32 len, const u8* buf) noexcept;
+private:
+    NANDFileSystem(Platform::FileHandle* nandfile) noexcept;
+    void SetupFATCrypto(AES_ctx* ctx, u32 ctr) noexcept;
+    bool ESEncrypt(u8* data, u32 len) noexcept;
+    bool ESDecrypt(u8* data, u32 len) noexcept;
+    bool ImportFile(const char* path, const u8* data, size_t len) noexcept;
+    bool ImportFile(const char* path, const char* in) noexcept;
+    bool ExportFile(const char* path, const char* out) noexcept;
+    u32 GetTitleVersion(u32 category, u32 titleid) noexcept;
+    bool CreateTicket(const char* path, u32 titleid0, u32 titleid1, u8 version) noexcept;
+    bool CreateSaveFile(const char* path, u32 len) noexcept;
+    bool InitTitleFileStructure(const NDSHeader& header, const DSi_TMD::TitleMetadata& tmd, bool readonly) noexcept;
+    FATFS CurFS {};
+    Platform::FileHandle* CurFile;
+    std::array<u8, 16> eMMC_CID {};
+    u64 ConsoleID {};
+    u8 FATIV[16] {};
+    u8 FATKey[16] {};
+    u8 ESKey[16] {};
+};
 
 typedef std::array<u8, 20> SHA1Hash;
 typedef std::array<u8, 8> TitleID;

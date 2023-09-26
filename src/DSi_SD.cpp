@@ -141,7 +141,7 @@ void DSi_SDHost::Reset()
         std::string instnand = nandpath + Platform::InstanceFileSuffix();
 
         mmc = new DSi_MMCStorage(this, true, instnand);
-        mmc->SetCID(DSi::eMMC_CID);
+        mmc->SetCID(DSi::eMMC_CID.data());
 
         Ports[0] = sd;
         Ports[1] = mmc;

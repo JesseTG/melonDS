@@ -73,6 +73,7 @@ std::string PreviousSaveFile = "";
 ARCodeFile* CheatFile = nullptr;
 bool CheatsOn = false;
 
+bool InstallNAND();
 
 int LastSep(const std::string& path)
 {
@@ -595,6 +596,10 @@ void Reset()
     LoadBIOSFiles();
 
     InstallFirmware();
+    if (Config::ConsoleType == 1)
+    {
+        InstallNAND();
+    }
     NDS::Reset();
     SetBatteryLevels();
 
@@ -656,6 +661,11 @@ bool LoadBIOS()
 
     if (!InstallFirmware())
         return false;
+
+    if (Config::ConsoleType == 1 && !InstallNAND())
+    { // If we're emulating a DSi and we couldn't install the NAND...
+        return false;
+    }
 
     if (NDS::NeedsDirectBoot())
         return false;
@@ -802,6 +812,44 @@ pair<unique_ptr<SPI_Firmware::Firmware>, string> LoadFirmwareFromFile()
     }
 
     return std::make_pair(std::move(firmware), loadedpath);
+}
+
+/// @warning: BIOS must be loaded and installed before calling this function!
+unique_ptr<DSi_NAND::NANDFileSystem> LoadNANDFromFile()
+{
+    string nandpath = Config::DSiNANDPath;
+
+    Log(LogLevel::Debug, "DSi NAND: loading from file %s\n", nandpath.c_str());
+
+    string nandinstancepath = nandpath + Platform::InstanceFileSuffix();
+
+    string loadedpath = nandinstancepath;
+    FileHandle* f = Platform::OpenLocalFile(nandinstancepath, FileMode::ReadWriteExisting);
+    if (!f)
+    {
+        loadedpath = nandpath;
+        f = Platform::OpenLocalFile(nandpath, FileMode::ReadWriteExisting);
+    }
+
+    // TODO: Remove the existing NAND first (it might be the same file)
+
+    if (f)
+    {
+        auto key = reinterpret_cast<const DSi_NAND::AESKey*>(&DSi::ARM7iBIOS[0x8308]);
+        unique_ptr<DSi_NAND::NANDFileSystem> nand = DSi_NAND::NANDFileSystem::New(f, *key);
+        if (!nand)
+        {
+            Log(LogLevel::Error, "Couldn't read NAND file!\n");
+
+            // The NAND object takes ownership of the file handle,
+            // so it will be cleaned up
+            // (even if the NAND object doesn't live past New())
+        }
+
+        return nand;
+    }
+
+    return nullptr;
 }
 
 pair<unique_ptr<SPI_Firmware::Firmware>, string> GenerateDefaultFirmware()
@@ -984,6 +1032,21 @@ bool InstallFirmware()
     return InstallFirmware(std::move(firmware));
 }
 
+bool InstallNAND()
+{
+    unique_ptr<DSi_NAND::NANDFileSystem> nand = LoadNANDFromFile();
+
+    if (!nand)
+    {
+        Log(LogLevel::Error, "NAND couldn't be loaded!.\n");
+        return false;
+    }
+
+    DSi::NAND = std::move(nand);
+
+    return true;
+}
+
 bool LoadROM(QStringList filepath, bool reset)
 {
     if (filepath.empty()) return false;
@@ -1084,7 +1147,10 @@ bool LoadROM(QStringList filepath, bool reset)
     {
         return false;
     }
-
+    if (Config::ConsoleType == 1 && !InstallNAND())
+    {
+        return false;
+    }
     if (reset)
     {
         NDS::SetConsoleType(Config::ConsoleType);
