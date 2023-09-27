@@ -32,7 +32,7 @@
 
 using namespace Platform;
 
-std::unique_ptr<DSi_NAND::NANDFileSystem> TitleManagerDialog::nand = nullptr;
+std::unique_ptr<DSi_NAND::NANDMount> TitleManagerDialog::nand = nullptr;
 TitleManagerDialog* TitleManagerDialog::currentDlg = nullptr;
 
 extern std::string EmuDirectory;
@@ -157,7 +157,7 @@ bool TitleManagerDialog::openNAND()
     // The FileHandle* is cleaned up by the NANDFileSystem
     // (either now upon failure or later after it's been used successfully)
 
-    nand = DSi_NAND::NANDFileSystem::New(nandfile, es_keyY);
+    nand = DSi_NAND::NANDMount::New(nandfile, es_keyY);
 
     return nand != nullptr;
 }
@@ -388,7 +388,7 @@ void TitleManagerDialog::onExportTitleData()
 }
 
 
-TitleImportDialog::TitleImportDialog(QWidget* parent, QString& apppath, const DSi_TMD::TitleMetadata* tmd, bool& readonly, std::unique_ptr<DSi_NAND::NANDFileSystem>& nand)
+TitleImportDialog::TitleImportDialog(QWidget* parent, QString& apppath, const DSi_TMD::TitleMetadata* tmd, bool& readonly, std::unique_ptr<DSi_NAND::NANDMount>& nand)
 : QDialog(parent), ui(new Ui::TitleImportDialog), appPath(apppath), tmdData(tmd), readOnly(readonly), nand(nand)
 {
     ui->setupUi(this);

@@ -815,7 +815,7 @@ pair<unique_ptr<SPI_Firmware::Firmware>, string> LoadFirmwareFromFile()
 }
 
 /// @warning: BIOS must be loaded and installed before calling this function!
-unique_ptr<DSi_NAND::NANDFileSystem> LoadNANDFromFile()
+unique_ptr<DSi_NAND::NANDMount> LoadNANDFromFile()
 {
     string nandpath = Config::DSiNANDPath;
 
@@ -836,7 +836,7 @@ unique_ptr<DSi_NAND::NANDFileSystem> LoadNANDFromFile()
     if (f)
     {
         auto key = reinterpret_cast<const DSi_NAND::AESKey*>(&DSi::ARM7iBIOS[0x8308]);
-        unique_ptr<DSi_NAND::NANDFileSystem> nand = DSi_NAND::NANDFileSystem::New(f, *key);
+        unique_ptr<DSi_NAND::NANDMount> nand = DSi_NAND::NANDMount::New(f, *key);
         if (!nand)
         {
             Log(LogLevel::Error, "Couldn't read NAND file!\n");
@@ -1034,7 +1034,7 @@ bool InstallFirmware()
 
 bool InstallNAND()
 {
-    unique_ptr<DSi_NAND::NANDFileSystem> nand = LoadNANDFromFile();
+    unique_ptr<DSi_NAND::NANDMount> nand = LoadNANDFromFile();
 
     if (!nand)
     {

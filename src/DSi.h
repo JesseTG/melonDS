@@ -68,7 +68,7 @@ void SetCartInserted(bool inserted);
 void SetupDirectBoot();
 void SoftReset();
 
-extern std::unique_ptr<DSi_NAND::NANDFileSystem> NAND;
+extern std::unique_ptr<DSi_NAND::NANDMount> NAND;
 
 void RunNDMAs(u32 cpu);
 void StallNDMAs();

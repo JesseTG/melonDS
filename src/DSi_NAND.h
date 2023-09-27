@@ -58,15 +58,15 @@ public:
     static std::unique_ptr<NANDImage> New(Platform::FileHandle& nandfile, const AESKey& es_keyY) noexcept;
 };
 
-class NANDFileSystem
+class NANDMount
 {
 public:
-    static std::unique_ptr<NANDFileSystem> New(Platform::FileHandle* nandfile, const AESKey& es_keyY) noexcept;
-    NANDFileSystem(const NANDFileSystem&) = delete;
-    NANDFileSystem(NANDFileSystem&&) noexcept;
-    NANDFileSystem& operator=(const NANDFileSystem&) = delete;
-    NANDFileSystem& operator=(NANDFileSystem&&) noexcept;
-    ~NANDFileSystem() noexcept;
+    static std::unique_ptr<NANDMount> New(Platform::FileHandle* nandfile, const AESKey& es_keyY) noexcept;
+    NANDMount(const NANDMount&) = delete;
+    NANDMount(NANDMount&&) noexcept;
+    NANDMount& operator=(const NANDMount&) = delete;
+    NANDMount& operator=(NANDMount&&) noexcept;
+    ~NANDMount() noexcept;
 
     [[nodiscard]] u64 GetConsoleID() const noexcept { return ConsoleID; }
     [[nodiscard]] const std::array<u8, 16>& GetEMMCCID() const noexcept { return eMMC_CID; }
@@ -93,7 +93,7 @@ public:
     u32 ReadFATBlock(u64 addr, u32 len, u8* buf) noexcept;
     u32 WriteFATBlock(u64 addr, u32 len, const u8* buf) noexcept;
 private:
-    NANDFileSystem(Platform::FileHandle* nandfile) noexcept;
+    NANDMount(Platform::FileHandle* nandfile) noexcept;
     void SetupFATCrypto(AES_ctx* ctx, u32 ctr) noexcept;
     bool ESEncrypt(u8* data, u32 len) noexcept;
     bool ESDecrypt(u8* data, u32 len) noexcept;

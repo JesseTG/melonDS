@@ -64,13 +64,13 @@ static const char* FResultToString(FRESULT res)
     }
 }
 
-std::unique_ptr<NANDFileSystem> NANDFileSystem::New(Platform::FileHandle* nandfile, const AESKey& es_keyY) noexcept
+std::unique_ptr<NANDMount> NANDMount::New(Platform::FileHandle* nandfile, const AESKey& es_keyY) noexcept
 {
     if (!nandfile)
         return nullptr;
 
-    unique_ptr<NANDFileSystem> nand(new NANDFileSystem(nandfile));
-    NANDFileSystem* nandptr = nand.get();
+    unique_ptr<NANDMount> nand(new NANDMount(nandfile));
+    NANDMount* nandptr = nand.get();
     u64 nandlen = FileLength(nandfile);
 
     ff_disk_open(
@@ -169,11 +169,11 @@ std::unique_ptr<NANDFileSystem> NANDFileSystem::New(Platform::FileHandle* nandfi
 }
 
 
-NANDFileSystem::NANDFileSystem(Platform::FileHandle* nandfile) noexcept : CurFile(nandfile)
+NANDMount::NANDMount(Platform::FileHandle* nandfile) noexcept : CurFile(nandfile)
 {
 }
 
-NANDFileSystem::~NANDFileSystem() noexcept
+NANDMount::~NANDMount() noexcept
 {
     f_unmount("0:");
     ff_disk_close();
@@ -182,7 +182,7 @@ NANDFileSystem::~NANDFileSystem() noexcept
     CurFile = nullptr;
 }
 
-void NANDFileSystem::SetupFATCrypto(AES_ctx* ctx, u32 ctr) noexcept
+void NANDMount::SetupFATCrypto(AES_ctx* ctx, u32 ctr) noexcept
 {
     u8 iv[16];
     memcpy(iv, FATIV, sizeof(iv));
@@ -206,7 +206,7 @@ void NANDFileSystem::SetupFATCrypto(AES_ctx* ctx, u32 ctr) noexcept
     AES_init_ctx_iv(ctx, FATKey, iv);
 }
 
-u32 NANDFileSystem::ReadFATBlock(u64 addr, u32 len, u8* buf) noexcept
+u32 NANDMount::ReadFATBlock(u64 addr, u32 len, u8* buf) noexcept
 {
     u32 ctr = (u32)(addr >> 4);
 
@@ -228,7 +228,7 @@ u32 NANDFileSystem::ReadFATBlock(u64 addr, u32 len, u8* buf) noexcept
     return len;
 }
 
-u32 NANDFileSystem::WriteFATBlock(u64 addr, u32 len, const u8* buf) noexcept
+u32 NANDMount::WriteFATBlock(u64 addr, u32 len, const u8* buf) noexcept
 {
     u32 ctr = (u32)(addr >> 4);
 
@@ -256,7 +256,7 @@ u32 NANDFileSystem::WriteFATBlock(u64 addr, u32 len, const u8* buf) noexcept
     return len;
 }
 
-bool NANDFileSystem::ESEncrypt(u8* data, u32 len) noexcept
+bool NANDMount::ESEncrypt(u8* data, u32 len) noexcept
 {
     AES_ctx ctx;
     u8 iv[16];
@@ -341,7 +341,7 @@ bool NANDFileSystem::ESEncrypt(u8* data, u32 len) noexcept
     return true;
 }
 
-bool NANDFileSystem::ESDecrypt(u8* data, u32 len) noexcept
+bool NANDMount::ESDecrypt(u8* data, u32 len) noexcept
 {
     AES_ctx ctx;
     u8 iv[16];
@@ -447,7 +447,7 @@ bool NANDFileSystem::ESDecrypt(u8* data, u32 len) noexcept
 }
 
 
-void NANDFileSystem::ReadHardwareInfo(u8* dataS, u8* dataN)
+void NANDMount::ReadHardwareInfo(u8* dataS, u8* dataN)
 {
     FF_FIL file;
     FRESULT res;
@@ -469,7 +469,7 @@ void NANDFileSystem::ReadHardwareInfo(u8* dataS, u8* dataN)
 }
 
 
-void NANDFileSystem::ReadUserData(u8* data)
+void NANDMount::ReadUserData(u8* data)
 {
     FF_FIL file;
     FRESULT res;
@@ -518,7 +518,7 @@ void NANDFileSystem::ReadUserData(u8* data)
     f_close(&file);
 }
 
-void NANDFileSystem::PatchUserData()
+void NANDMount::PatchUserData()
 {
     FRESULT res;
 
@@ -621,7 +621,7 @@ void debug_listfiles(const char* path)
     f_closedir(&dir);
 }
 
-bool NANDFileSystem::ImportFile(const char* path, const u8* data, size_t len) noexcept
+bool NANDMount::ImportFile(const char* path, const u8* data, size_t len) noexcept
 {
     if (!data || !len || !path)
         return false;
@@ -655,7 +655,7 @@ bool NANDFileSystem::ImportFile(const char* path, const u8* data, size_t len) no
     return true;
 }
 
-bool NANDFileSystem::ImportFile(const char* path, const char* in) noexcept
+bool NANDMount::ImportFile(const char* path, const char* in) noexcept
 {
     FF_FIL file;
     FILE* fin;
@@ -698,7 +698,7 @@ bool NANDFileSystem::ImportFile(const char* path, const char* in) noexcept
     return true;
 }
 
-bool NANDFileSystem::ExportFile(const char* path, const char* out) noexcept
+bool NANDMount::ExportFile(const char* path, const char* out) noexcept
 {
     FF_FIL file;
     FILE* fout;
@@ -739,7 +739,7 @@ bool NANDFileSystem::ExportFile(const char* path, const char* out) noexcept
     return true;
 }
 
-void NANDFileSystem::RemoveFile(const char* path)
+void NANDMount::RemoveFile(const char* path)
 {
     FF_FILINFO info;
     FRESULT res = f_stat(path, &info);
@@ -752,7 +752,7 @@ void NANDFileSystem::RemoveFile(const char* path)
     Log(LogLevel::Debug, "Removed file at %s\n", path);
 }
 
-void NANDFileSystem::RemoveDir(const char* path)
+void NANDMount::RemoveDir(const char* path)
 {
     FF_DIR dir;
     FF_FILINFO info;
@@ -807,7 +807,7 @@ void NANDFileSystem::RemoveDir(const char* path)
 }
 
 
-u32 NANDFileSystem::GetTitleVersion(u32 category, u32 titleid) noexcept
+u32 NANDMount::GetTitleVersion(u32 category, u32 titleid) noexcept
 {
     FRESULT res;
     char path[256];
@@ -827,7 +827,7 @@ u32 NANDFileSystem::GetTitleVersion(u32 category, u32 titleid) noexcept
     return version;
 }
 
-void NANDFileSystem::ListTitles(u32 category, std::vector<u32>& titlelist)
+void NANDMount::ListTitles(u32 category, std::vector<u32>& titlelist)
 {
     FRESULT res;
     FF_DIR titledir;
@@ -876,7 +876,7 @@ void NANDFileSystem::ListTitles(u32 category, std::vector<u32>& titlelist)
     f_closedir(&titledir);
 }
 
-bool NANDFileSystem::TitleExists(u32 category, u32 titleid)
+bool NANDMount::TitleExists(u32 category, u32 titleid)
 {
     char path[256];
     snprintf(path, sizeof(path), "0:/title/%08x/%08x/content/title.tmd", category, titleid);
@@ -885,7 +885,7 @@ bool NANDFileSystem::TitleExists(u32 category, u32 titleid)
     return (res == FR_OK);
 }
 
-void NANDFileSystem::GetTitleInfo(u32 category, u32 titleid, u32& version, NDSHeader* header, NDSBanner* banner)
+void NANDMount::GetTitleInfo(u32 category, u32 titleid, u32& version, NDSHeader* header, NDSBanner* banner)
 {
     version = GetTitleVersion(category, titleid);
     if (version == 0xFFFFFFFF)
@@ -920,7 +920,7 @@ void NANDFileSystem::GetTitleInfo(u32 category, u32 titleid, u32& version, NDSHe
     f_close(&file);
 }
 
-bool NANDFileSystem::CreateTicket(const char* path, u32 titleid0, u32 titleid1, u8 version) noexcept
+bool NANDMount::CreateTicket(const char* path, u32 titleid0, u32 titleid1, u8 version) noexcept
 {
     FF_FIL file;
     FRESULT res;
@@ -955,7 +955,7 @@ bool NANDFileSystem::CreateTicket(const char* path, u32 titleid0, u32 titleid1, 
     return true;
 }
 
-bool NANDFileSystem::CreateSaveFile(const char* path, u32 len) noexcept
+bool NANDMount::CreateSaveFile(const char* path, u32 len) noexcept
 {
     if (len == 0) return true;
     if (len < 0x200) return false;
@@ -1045,7 +1045,7 @@ bool NANDFileSystem::CreateSaveFile(const char* path, u32 len) noexcept
     return true;
 }
 
-bool NANDFileSystem::InitTitleFileStructure(const NDSHeader& header, const DSi_TMD::TitleMetadata& tmd, bool readonly) noexcept
+bool NANDMount::InitTitleFileStructure(const NDSHeader& header, const DSi_TMD::TitleMetadata& tmd, bool readonly) noexcept
 {
     u32 titleid0 = tmd.GetCategory();
     u32 titleid1 = tmd.GetID();
@@ -1125,7 +1125,7 @@ bool NANDFileSystem::InitTitleFileStructure(const NDSHeader& header, const DSi_T
     return true;
 }
 
-bool NANDFileSystem::ImportTitle(const char* appfile, const DSi_TMD::TitleMetadata& tmd, bool readonly)
+bool NANDMount::ImportTitle(const char* appfile, const DSi_TMD::TitleMetadata& tmd, bool readonly)
 {
     NDSHeader header {};
     {
@@ -1163,7 +1163,7 @@ bool NANDFileSystem::ImportTitle(const char* appfile, const DSi_TMD::TitleMetada
     return true;
 }
 
-bool NANDFileSystem::ImportTitle(const u8* app, size_t appLength, const DSi_TMD::TitleMetadata& tmd, bool readonly)
+bool NANDMount::ImportTitle(const u8* app, size_t appLength, const DSi_TMD::TitleMetadata& tmd, bool readonly)
 {
     if (!app || appLength < sizeof(NDSHeader))
         return false;
@@ -1199,7 +1199,7 @@ bool NANDFileSystem::ImportTitle(const u8* app, size_t appLength, const DSi_TMD:
     return true;
 }
 
-void NANDFileSystem::DeleteTitle(u32 category, u32 titleid)
+void NANDMount::DeleteTitle(u32 category, u32 titleid)
 {
     char fname[128];
 
@@ -1210,7 +1210,7 @@ void NANDFileSystem::DeleteTitle(u32 category, u32 titleid)
     RemoveDir(fname);
 }
 
-u32 NANDFileSystem::GetTitleDataMask(u32 category, u32 titleid)
+u32 NANDMount::GetTitleDataMask(u32 category, u32 titleid)
 {
     u32 version;
     NDSHeader header;
@@ -1227,7 +1227,7 @@ u32 NANDFileSystem::GetTitleDataMask(u32 category, u32 titleid)
     return ret;
 }
 
-bool NANDFileSystem::ImportTitleData(u32 category, u32 titleid, int type, const char* file)
+bool NANDMount::ImportTitleData(u32 category, u32 titleid, int type, const char* file)
 {
     char fname[128];
 
@@ -1253,7 +1253,7 @@ bool NANDFileSystem::ImportTitleData(u32 category, u32 titleid, int type, const 
     return ImportFile(fname, file);
 }
 
-bool NANDFileSystem::ExportTitleData(u32 category, u32 titleid, int type, const char* file)
+bool NANDMount::ExportTitleData(u32 category, u32 titleid, int type, const char* file)
 {
     char fname[128];
 

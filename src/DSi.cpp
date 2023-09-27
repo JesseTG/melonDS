@@ -77,7 +77,7 @@ u32 NWRAMMask[2][3];
 u32 NDMACnt[2];
 DSi_NDMA* NDMAs[8];
 
-unique_ptr<DSi_NAND::NANDFileSystem> NAND;
+unique_ptr<DSi_NAND::NANDMount> NAND;
 DSi_SDHost* SDMMC;
 DSi_SDHost* SDIO;
 
