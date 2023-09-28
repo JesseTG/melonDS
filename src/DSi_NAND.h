@@ -49,6 +49,17 @@ enum
 typedef std::array<u8, 16> AESKey;
 using DsiHardwareInfoN = std::array<u8, 0x9C>;
 union DSiFirmwareSystemSettings;
+struct BootParameters
+{
+    u32 ARM9Offset;
+    u32 ARM9Size;
+    u32 ARM9RAM;
+    u32 ARM9SizeAligned;
+    u32 ARM7Offset;
+    u32 ARM7Size;
+    u32 ARM7RAM;
+    u32 ARM7SizeAligned;
+};
 
 /// Represents a raw DSi NAND image before it's mounted by fatfs.
 /// Since fatfs can only mount a limited number of file systems at once,
