@@ -39,8 +39,8 @@ extern u32 SCFG_EXT[2];
 extern u8 ARM9iBIOS[0x10000];
 extern u8 ARM7iBIOS[0x10000];
 
-extern std::array<u8, 16> eMMC_CID;
-extern u64 ConsoleID;
+[[deprecated("Get this from the NANDImage inside SDMMC instead")]] extern std::array<u8, 16> eMMC_CID;
+[[deprecated("Get this from the NANDImage inside SDMMC instead")]] extern u64 ConsoleID;
 
 extern DSi_SDMMCHost* SDMMC;
 extern DSi_SDIOHost* SDIO;
