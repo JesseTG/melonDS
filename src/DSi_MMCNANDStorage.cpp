@@ -17,3 +17,15 @@
 */
 
 #include "DSi_MMCNANDStorage.h"
+#include "DSi_NAND.h"
+
+DSi_MMCNANDStorage::DSi_MMCNANDStorage(DSi_SDMMCHost* host, std::unique_ptr<DSi_NAND::NANDImage>&& nand) noexcept :
+    DSi_MMCStorage(host, true),
+    NAND(std::move(nand))
+{
+}
+
+DSi_MMCNANDStorage::DSi_MMCNANDStorage(DSi_SDMMCHost* host) noexcept :
+    DSi_MMCStorage(host, true)
+{
+}

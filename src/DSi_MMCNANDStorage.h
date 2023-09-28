@@ -21,9 +21,22 @@
 
 #include "DSi_MMCStorage.h"
 
+namespace DSi_NAND
+{
+    class NANDImage;
+}
+
 class DSi_MMCNANDStorage final : public DSi_MMCStorage
 {
+public:
+    DSi_MMCNANDStorage(DSi_SDMMCHost* host, std::unique_ptr<DSi_NAND::NANDImage>&& nand) noexcept;
+    explicit DSi_MMCNANDStorage(DSi_SDMMCHost* host) noexcept;
 
+    [[nodiscard]] const std::unique_ptr<DSi_NAND::NANDImage>& GetNAND() const noexcept { return NAND; }
+    [[nodiscard]] std::unique_ptr<DSi_NAND::NANDImage>& GetNAND() noexcept { return NAND; }
+
+private:
+    std::unique_ptr<DSi_NAND::NANDImage> NAND;
 };
 
 #endif // DSI_MMCNANDSTORAGE_H
