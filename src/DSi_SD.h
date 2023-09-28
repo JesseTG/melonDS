@@ -33,7 +33,7 @@ public:
     ~DSi_SDHost();
 
     [[deprecated("Use ResetDevices() instead")]] void CloseHandles();
-    void Reset();
+    virtual void Reset() noexcept;
 
     void DoSavestate(Savestate* file);
 

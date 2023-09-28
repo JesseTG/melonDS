@@ -72,7 +72,7 @@ void DSi_SDHost::CloseHandles()
     Ports[1] = nullptr;
 }
 
-void DSi_SDHost::Reset()
+void DSi_SDHost::Reset() noexcept
 {
     if (Num == 0)
     {

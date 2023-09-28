@@ -25,6 +25,7 @@ class DSi_SDIOHost final : public DSi_SDHost
 {
 public:
     DSi_SDIOHost();
+    void Reset() noexcept override;
 
 private:
 

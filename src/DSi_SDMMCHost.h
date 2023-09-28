@@ -25,6 +25,7 @@ class DSi_SDMMCHost final : public DSi_SDHost
 {
 public:
     DSi_SDMMCHost();
+    void Reset() noexcept override;
 
 private:
 

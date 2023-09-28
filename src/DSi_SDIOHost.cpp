@@ -22,3 +22,8 @@ DSi_SDIOHost::DSi_SDIOHost() : DSi_SDHost(1)
 {
 
 }
+
+void DSi_SDIOHost::Reset() noexcept
+{
+    DSi_SDHost::Reset();
+}

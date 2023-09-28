@@ -22,3 +22,8 @@ DSi_SDMMCHost::DSi_SDMMCHost() : DSi_SDHost(0)
 {
 
 }
+
+void DSi_SDMMCHost::Reset() noexcept
+{
+    DSi_SDHost::Reset();
+}
