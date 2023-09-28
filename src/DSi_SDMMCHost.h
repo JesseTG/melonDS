@@ -21,8 +21,8 @@
 
 #include "DSi_SD.h"
 
-class DSi_SDMMCHost : public DSi_SDHost
 {
+class DSi_SDMMCHost final : public DSi_SDHost
 
 };
 
