@@ -44,7 +44,7 @@ DSi_MMCStorage::DSi_MMCStorage(DSi_SDHost* host, bool internal, const std::strin
     ReadOnly = readonly;
 }
 
-DSi_MMCStorage::~DSi_MMCStorage()
+DSi_MMCStorage::~DSi_MMCStorage() noexcept
 {
     if (SD)
     {
@@ -57,7 +57,7 @@ DSi_MMCStorage::~DSi_MMCStorage()
     }
 }
 
-void DSi_MMCStorage::Reset()
+void DSi_MMCStorage::Reset() noexcept
 {
     // TODO: reset file access????
 
@@ -82,7 +82,7 @@ void DSi_MMCStorage::Reset()
     RWCommand = 0;
 }
 
-void DSi_MMCStorage::DoSavestate(Savestate* file)
+void DSi_MMCStorage::DoSavestate(Savestate* file) noexcept
 {
     file->Section(Internal ? "NAND" : "SDCR");
 
@@ -102,7 +102,7 @@ void DSi_MMCStorage::DoSavestate(Savestate* file)
     // TODO: what about the file contents?
 }
 
-void DSi_MMCStorage::SendCMD(u8 cmd, u32 param)
+void DSi_MMCStorage::SendCMD(u8 cmd, u32 param) noexcept
 {
     if (CSR & (1<<5))
     {
@@ -275,7 +275,7 @@ void DSi_MMCStorage::SendACMD(u8 cmd, u32 param)
     Log(LogLevel::Warn, "MMC: unknown ACMD %d %08X\n", cmd, param);
 }
 
-void DSi_MMCStorage::ContinueTransfer()
+void DSi_MMCStorage::ContinueTransfer() noexcept
 {
     if (RWCommand == 0) return;
 

@@ -30,15 +30,15 @@ class DSi_SDHost;
 class DSi_SDDevice
 {
 public:
-    DSi_SDDevice(DSi_SDHost* host) { Host = host; IRQ = false; ReadOnly = false; }
-    virtual ~DSi_SDDevice() = default;
+    explicit DSi_SDDevice(DSi_SDHost* host) noexcept { Host = host; IRQ = false; ReadOnly = false; }
+    virtual ~DSi_SDDevice() noexcept = default;
 
-    virtual void Reset() = 0;
+    virtual void Reset() noexcept = 0;
 
-    virtual void DoSavestate(Savestate* file) = 0;
+    virtual void DoSavestate(Savestate* file) noexcept = 0;
 
-    virtual void SendCMD(u8 cmd, u32 param) = 0;
-    virtual void ContinueTransfer() = 0;
+    virtual void SendCMD(u8 cmd, u32 param) noexcept = 0;
+    virtual void ContinueTransfer() noexcept = 0;
 
     bool IRQ;
     [[deprecated("Move to DSi_MMCSDCardStorage, it's the only SDDevice that can be read-only")]] bool ReadOnly;

@@ -146,7 +146,7 @@ DSi_NWifi::~DSi_NWifi()
     Ctx = nullptr;
 }
 
-void DSi_NWifi::Reset()
+void DSi_NWifi::Reset() noexcept
 {
     using namespace SPI_Firmware;
     TransferCmd = 0xFFFFFFFF;
@@ -228,7 +228,7 @@ void DSi_NWifi::Reset()
     NDS::CancelEvent(NDS::Event_DSi_NWifi);
 }
 
-void DSi_NWifi::DoSavestate(Savestate* file)
+void DSi_NWifi::DoSavestate(Savestate* file) noexcept
 {
     file->Section("NWFi");
 
@@ -612,7 +612,7 @@ void DSi_NWifi::SDIO_Write(u32 func, u32 addr, u8 val)
 }
 
 
-void DSi_NWifi::SendCMD(u8 cmd, u32 param)
+void DSi_NWifi::SendCMD(u8 cmd, u32 param) noexcept
 {
     switch (cmd)
     {
@@ -689,7 +689,7 @@ void DSi_NWifi::SendACMD(u8 cmd, u32 param)
     Log(LogLevel::Warn, "NWIFI: unknown ACMD %d %08X\n", cmd, param);
 }
 
-void DSi_NWifi::ContinueTransfer()
+void DSi_NWifi::ContinueTransfer() noexcept
 {
     if (TransferCmd & (1<<31))
         WriteBlock();

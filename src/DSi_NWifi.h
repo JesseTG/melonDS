@@ -28,16 +28,16 @@ class DSi_NWifi : public DSi_SDDevice
 {
 public:
     DSi_NWifi(DSi_SDHost* host);
-    ~DSi_NWifi();
+    ~DSi_NWifi() noexcept override;
 
-    void Reset();
+    void Reset() noexcept override;
 
-    void DoSavestate(Savestate* file);
+    void DoSavestate(Savestate* file) noexcept override;
 
-    void SendCMD(u8 cmd, u32 param);
+    void SendCMD(u8 cmd, u32 param) noexcept override;
     void SendACMD(u8 cmd, u32 param);
 
-    void ContinueTransfer();
+    void ContinueTransfer() noexcept override;
 
     void SetIRQ_F1_Counter(u32 n);
 

@@ -23,7 +23,8 @@
 #include "FIFO.h"
 #include "FATStorage.h"
 #include "Savestate.h"
-#include "DSi_SDDevice.h"
+
+class DSi_SDDevice;
 
 class DSi_SDHost
 {
@@ -41,7 +42,7 @@ public:
     void SendResponse(u32 val, bool last);
     u32 DataRX(const u8* data, u32 len);
     u32 DataTX(u8* data, u32 len);
-    u32 GetTransferrableLen(u32 len) const noexcept;
+    [[nodiscard]] u32 GetTransferrableLen(u32 len) const noexcept;
 
     void CheckRX();
     void CheckTX();

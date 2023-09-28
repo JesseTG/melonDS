@@ -30,18 +30,18 @@ class DSi_MMCStorage : public DSi_SDDevice
 public:
     DSi_MMCStorage(DSi_SDHost* host, bool internal, const std::string& filename);
     DSi_MMCStorage(DSi_SDHost* host, bool internal, const std::string& filename, u64 size, bool readonly, const std::string& sourcedir);
-    ~DSi_MMCStorage();
+    ~DSi_MMCStorage() noexcept override;
 
-    void Reset();
+    void Reset() noexcept override;
 
-    void DoSavestate(Savestate* file);
+    void DoSavestate(Savestate* file) noexcept override;
 
     void SetCID(u8* cid) { memcpy(CID, cid, 16); }
 
-    void SendCMD(u8 cmd, u32 param);
+    void SendCMD(u8 cmd, u32 param) noexcept override;
     void SendACMD(u8 cmd, u32 param);
 
-    void ContinueTransfer();
+    void ContinueTransfer() noexcept override;
 
 private:
     Platform::FileHandle* File;
