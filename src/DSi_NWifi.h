@@ -22,6 +22,7 @@
 #include "DSi_SD.h"
 #include "FIFO.h"
 #include "Savestate.h"
+#include "DSi_SDDevice.h"
 
 class DSi_NWifi : public DSi_SDDevice
 {

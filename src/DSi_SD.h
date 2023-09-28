@@ -23,9 +23,7 @@
 #include "FIFO.h"
 #include "FATStorage.h"
 #include "Savestate.h"
-
-class DSi_SDDevice;
-
+#include "DSi_SDDevice.h"
 
 class DSi_SDHost
 {
@@ -97,70 +95,6 @@ private:
     void SetIRQ(u32 irq);
     void UpdateIRQ(u32 oldmask);
     void UpdateCardIRQ(u16 oldmask);
-};
-
-
-class DSi_SDDevice
-{
-public:
-    DSi_SDDevice(DSi_SDHost* host) { Host = host; IRQ = false; ReadOnly = false; }
-    virtual ~DSi_SDDevice() = default;
-
-    virtual void Reset() = 0;
-
-    virtual void DoSavestate(Savestate* file) = 0;
-
-    virtual void SendCMD(u8 cmd, u32 param) = 0;
-    virtual void ContinueTransfer() = 0;
-
-    bool IRQ;
-    [[deprecated("Move to DSi_MMCSDCardStorage, it's the only SDDevice that can be read-only")]] bool ReadOnly;
-
-protected:
-    DSi_SDHost* Host;
-};
-
-
-class DSi_MMCStorage : public DSi_SDDevice
-{
-public:
-    DSi_MMCStorage(DSi_SDHost* host, bool internal, const std::string& filename);
-    DSi_MMCStorage(DSi_SDHost* host, bool internal, const std::string& filename, u64 size, bool readonly, const std::string& sourcedir);
-    ~DSi_MMCStorage();
-
-    void Reset();
-
-    void DoSavestate(Savestate* file);
-
-    void SetCID(u8* cid) { memcpy(CID, cid, 16); }
-
-    void SendCMD(u8 cmd, u32 param);
-    void SendACMD(u8 cmd, u32 param);
-
-    void ContinueTransfer();
-
-private:
-    Platform::FileHandle* File;
-    FATStorage* SD;
-    [[deprecated("Make this implicit in the subclass instead")]] bool Internal;
-
-    u8 CID[16];
-    u8 CSD[16];
-
-    u32 CSR;
-    u32 OCR;
-    u32 RCA;
-    u8 SCR[8];
-    u8 SSR[64];
-
-    u32 BlockSize;
-    u32 RWCommand;
-    u64 RWAddress;
-
-    void SetState(u32 state) { CSR &= ~(0xF << 9); CSR |= (state << 9); }
-
-    u32 ReadBlock(u64 addr);
-    u32 WriteBlock(u64 addr);
 };
 
 #endif // DSI_SD_H

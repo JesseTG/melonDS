@@ -23,6 +23,7 @@
 #include "SPI.h"
 #include "WifiAP.h"
 #include "Platform.h"
+#include "DSi_SDDevice.h"
 
 using Platform::Log;
 using Platform::LogLevel;
