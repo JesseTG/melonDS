@@ -36,7 +36,7 @@ public:
 
     void DoSavestate(Savestate* file) noexcept override;
 
-    void SetCID(u8* cid) { memcpy(CID, cid, 16); }
+    void SetCID(const u8* cid) noexcept { memcpy(CID, cid, 16); }
 
     void SendCMD(u8 cmd, u32 param) noexcept override;
     void SendACMD(u8 cmd, u32 param);
