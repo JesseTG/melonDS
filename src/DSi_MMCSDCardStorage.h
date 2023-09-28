@@ -19,4 +19,11 @@
 #ifndef DSI_MMCSDCARDSTORAGE_H
 #define DSI_MMCSDCARDSTORAGE_H
 
+#include "DSi_MMCStorage.h"
+
+class DSi_MMCSDCardStorage final : public DSi_MMCStorage
+{
+
+};
+
 #endif // DSI_MMCSDCARDSTORAGE_H

@@ -19,4 +19,11 @@
 #ifndef DSI_MMCNANDSTORAGE_H
 #define DSI_MMCNANDSTORAGE_H
 
+#include "DSi_MMCStorage.h"
+
+class DSi_MMCNANDStorage final : public DSi_MMCStorage
+{
+
+};
+
 #endif // DSI_MMCNANDSTORAGE_H
