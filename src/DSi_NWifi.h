@@ -24,7 +24,7 @@
 #include "Savestate.h"
 #include "DSi_SDDevice.h"
 
-class DSi_NWifi : public DSi_SDDevice
+class DSi_NWifi final : public DSi_SDDevice
 {
 public:
     DSi_NWifi(DSi_SDHost* host);
