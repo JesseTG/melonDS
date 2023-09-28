@@ -24,10 +24,12 @@
 #include "Savestate.h"
 #include "DSi_SDDevice.h"
 
+class DSi_SDIOHost;
+
 class DSi_NWifi final : public DSi_SDDevice
 {
 public:
-    DSi_NWifi(DSi_SDHost* host);
+    DSi_NWifi(DSi_SDIOHost* host) noexcept;
     ~DSi_NWifi() noexcept override;
 
     void Reset() noexcept override;
@@ -46,6 +48,7 @@ public:
     static void MSTimer(u32 param);
 
 private:
+    DSi_SDIOHost* Host;
     u32 TransferCmd;
     u32 TransferAddr;
     u32 RemSize;

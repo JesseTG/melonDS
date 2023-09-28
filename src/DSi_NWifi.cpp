@@ -23,6 +23,7 @@
 #include "SPI.h"
 #include "WifiAP.h"
 #include "Platform.h"
+#include "DSi_SDIOHost.h"
 #include "DSi_SDDevice.h"
 
 using Platform::Log;
@@ -120,8 +121,9 @@ const u8 CIS1[256] =
 DSi_NWifi* Ctx = nullptr;
 
 
-DSi_NWifi::DSi_NWifi(DSi_SDHost* host)
-    : DSi_SDDevice(host),
+DSi_NWifi::DSi_NWifi(DSi_SDIOHost* host) noexcept
+    : DSi_SDDevice(),
+      Host(host),
         Mailbox
         {
             // HACK
