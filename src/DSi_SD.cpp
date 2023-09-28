@@ -285,7 +285,7 @@ void DSi_SDHost::SendResponse(u32 val, bool last)
 
 void DSi_SDHost::FinishRX(u32 param)
 {
-    DSi_SDHost* host = (param & 0x1) ? DSi::SDIO : DSi::SDMMC;
+    DSi_SDHost* host = (param & 0x1) ? (DSi_SDHost*)DSi::SDIO : (DSi_SDHost*)DSi::SDMMC;
 
     host->CheckSwapFIFO();
 
@@ -321,7 +321,7 @@ u32 DSi_SDHost::DataRX(const u8* data, u32 len)
 
 void DSi_SDHost::FinishTX(u32 param)
 {
-    DSi_SDHost* host = (param & 0x1) ? DSi::SDIO : DSi::SDMMC;
+    DSi_SDHost* host = (param & 0x1) ? (DSi_SDHost*)DSi::SDIO : (DSi_SDHost*)DSi::SDMMC;
     DSi_SDDevice* dev = host->Ports[host->PortSelect & 0x1];
 
     if (host->BlockCountInternal == 0)
