@@ -21,6 +21,8 @@ add_library(core STATIC
     DSi_DSP.cpp
     DSi_I2C.cpp
     DSi_MMCStorage.cpp
+    DSi_MMCNANDStorage.cpp
+    DSi_MMCSDCardStorage.cpp
     DSi_NAND.cpp
     DSi_NDMA.cpp
     DSi_NWifi.cpp
