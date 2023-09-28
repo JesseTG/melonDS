@@ -25,6 +25,7 @@ add_library(core STATIC
     DSi_NDMA.cpp
     DSi_NWifi.cpp
     DSi_SD.cpp
+    DSi_SDMMCHost.cpp
     DSi_SPI_TSC.cpp
     FATStorage.cpp
     FATIO.cpp

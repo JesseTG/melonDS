@@ -97,12 +97,6 @@ private:
     void UpdateIRQ(u32 oldmask);
     void UpdateCardIRQ(u16 oldmask);
 };
-
-class DSi_SDMMCHost : public DSi_SDHost
-{
-
-};
-
 class DSi_SDIOHost : public DSi_SDHost
 {
 
