@@ -47,6 +47,8 @@ enum
 };
 
 typedef std::array<u8, 16> AESKey;
+using DsiHardwareInfoN = std::array<u8, 0x9C>;
+union DSiFirmwareSystemSettings;
 
 /// Represents a raw DSi NAND image before it's mounted by fatfs.
 /// Since fatfs can only mount a limited number of file systems at once,
@@ -121,58 +123,95 @@ typedef std::array<u8, 8> TitleID;
 /// the rest is FF-padded.
 /// This struct excludes the padding.
 /// @see https://problemkaputt.de/gbatek.htm#dsisdmmcfirmwaresystemsettingsdatafiles
-struct DSiFirmwareSystemSettings
+union DSiFirmwareSystemSettings
 {
-    SHA1Hash Hash;
-    u8 Zero00[108];
-    u8 Version;
-    u8 UpdateCounter;
-    u8 Zero01[2];
-    u32 BelowRAMAreaSize;
-    u32 ConfigFlags;
-    u8 Zero02;
-    u8 CountryCode;
-    SPI_Firmware::Language Language;
-    u8 RTCYear;
-    u32 RTCOffset;
-    u8 Zero3[4];
-    u8 EULAVersion;
-    u8 Zero04[9];
-    u8 AlarmHour;
-    u8 AlarmMinute;
-    u8 Zero05[2];
-    bool AlarmEnable;
-    u8 Zero06[2];
-    u8 SystemMenuUsedTitleSlots;
-    u8 SystemMenuFreeTitleSlots;
-    u8 Unknown0;
-    u8 Unknown1;
-    u8 Zero07[3];
-    TitleID SystemMenuMostRecentTitleID;
-    u16 TouchCalibrationADC1[2];
-    u8 TouchCalibrationPixel1[2];
-    u16 TouchCalibrationADC2[2];
-    u8 TouchCalibrationPixel2[2];
-    u8 Unknown2[4];
-    u8 Zero08[4];
-    u8 FavoriteColor;
-    u8 Zero09;
-    u8 BirthdayMonth;
-    u8 BirthdayDay;
-    char16_t Nickname[11];
-    char16_t Message[27];
-    u8 ParentalControlsFlags;
-    u8 Zero10[6];
-    u8 ParentalControlsRegion;
-    u8 ParentalControlsYearsOfAgeRating;
-    u8 ParentalControlsSecretQuestion;
-    u8 Unknown3;
-    u8 Zero11[2];
-    char ParentalControlsPIN[5];
-    char16_t ParentalControlsSecretAnswer[65];
+    struct
+    {
+        SHA1Hash Hash;
+        u8 Zero00[108];
+        u8 Version;
+        u8 UpdateCounter;
+        u8 Zero01[2];
+        u32 BelowRAMAreaSize;
+        u32 ConfigFlags;
+        u8 Zero02;
+        u8 CountryCode;
+        SPI_Firmware::Language Language;
+        u8 RTCYear;
+        u32 RTCOffset;
+        u8 Zero3[4];
+        u8 EULAVersion;
+        u8 Zero04[9];
+        u8 AlarmHour;
+        u8 AlarmMinute;
+        u8 Zero05[2];
+        bool AlarmEnable;
+        u8 Zero06[2];
+        u8 SystemMenuUsedTitleSlots;
+        u8 SystemMenuFreeTitleSlots;
+        u8 Unknown0;
+        u8 Unknown1;
+        u8 Zero07[3];
+        TitleID SystemMenuMostRecentTitleID;
+        u16 TouchCalibrationADC1[2];
+        u8 TouchCalibrationPixel1[2];
+        u16 TouchCalibrationADC2[2];
+        u8 TouchCalibrationPixel2[2];
+        u8 Unknown2[4];
+        u8 Zero08[4];
+        u8 FavoriteColor;
+        u8 Zero09;
+        u8 BirthdayMonth;
+        u8 BirthdayDay;
+        char16_t Nickname[11];
+        char16_t Message[27];
+        u8 ParentalControlsFlags;
+        u8 Zero10[6];
+        u8 ParentalControlsRegion;
+        u8 ParentalControlsYearsOfAgeRating;
+        u8 ParentalControlsSecretQuestion;
+        u8 Unknown3;
+        u8 Zero11[2];
+        char ParentalControlsPIN[5];
+        char16_t ParentalControlsSecretAnswer[65];
+    };
+    u8 Bytes[432];
+
+    void UpdateHash() noexcept;
 };
 
 static_assert(sizeof(DSiFirmwareSystemSettings) == 432, "DSiFirmwareSystemSettings must be exactly 432 bytes");
+
+enum class ConsoleRegion : u8
+{
+    Japan,
+    USA,
+    Europe,
+    Australia,
+    China,
+    Korea,
+};
+
+/// Data file saved to 0:/sys/HWINFO_S.dat.
+/// @note The file is normally 16KiB, but only the first 164 bytes are used;
+/// the rest is FF-padded.
+/// This struct excludes the padding.
+/// @see https://problemkaputt.de/gbatek.htm#dsisdmmcfirmwaremiscfiles
+struct DSiSerialData
+{
+    u8 RsaSha1HMAC[0x80];
+    u32 Version;
+    u32 EntrySize;
+    u32 SupportedLanguages;
+    u8 Unknown0[4];
+    ConsoleRegion Region;
+    char Serial[12];
+    u8 Unknown1[3];
+    u8 TitleIDLSBs[4];
+};
+
+static_assert(sizeof(DSiSerialData) == 164, "DSiSerialData must be exactly 164 bytes");
+
 
 }
 
