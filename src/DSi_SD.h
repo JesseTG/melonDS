@@ -41,13 +41,13 @@ public:
     static void FinishRX(u32 param);
     static void FinishTX(u32 param);
     void SendResponse(u32 val, bool last);
-    u32 DataRX(u8* data, u32 len);
+    u32 DataRX(const u8* data, u32 len);
     u32 DataTX(u8* data, u32 len);
-    u32 GetTransferrableLen(u32 len);
+    u32 GetTransferrableLen(u32 len) const noexcept;
 
     void CheckRX();
     void CheckTX();
-    bool TXReq;
+    bool TXReq {};
 
     void SetCardIRQ();
 
@@ -63,33 +63,33 @@ public:
 
 private:
     u32 Num;
+    u16 PortSelect {};
+    u16 SoftReset {};
+    u16 SDClock {};
+    u16 SDOption {};
 
-    u16 PortSelect;
-    u16 SoftReset;
-    u16 SDClock;
-    u16 SDOption;
+    u32 IRQMask {};    // ~IE
 
     u32 IRQStatus;  // IF
-    u32 IRQMask;    // ~IE
+    u16 CardIRQStatus {};
+    u16 CardIRQMask {};
+    u16 CardIRQCtl {};
 
-    u16 CardIRQStatus;
-    u16 CardIRQMask;
-    u16 CardIRQCtl;
+    u16 DataCtl {};
+    u16 Data32IRQ {};
+    u32 DataMode {}; // 0=16bit 1=32bit
+    u16 BlockCount16 {}, BlockCount32 {}, BlockCountInternal {};
+    u16 BlockLen16 {}, BlockLen32 {};
+    u16 StopAction {};
 
-    u16 DataCtl;
-    u16 Data32IRQ;
-    u32 DataMode; // 0=16bit 1=32bit
-    u16 BlockCount16, BlockCount32, BlockCountInternal;
-    u16 BlockLen16, BlockLen32;
-    u16 StopAction;
+    u16 Command {};
+    u32 Param {};
+    u16 ResponseBuffer[8] {};
 
-    u16 Command;
-    u32 Param;
-    u16 ResponseBuffer[8];
 
     DSi_SDDevice* Ports[2];
 
-    u32 CurFIFO; // FIFO accessible for read/write
+    u32 CurFIFO {}; // FIFO accessible for read/write
     FIFO<u16, 0x100> DataFIFO[2];
     FIFO<u32, 0x80> DataFIFO32;
 
@@ -105,7 +105,7 @@ class DSi_SDDevice
 {
 public:
     DSi_SDDevice(DSi_SDHost* host) { Host = host; IRQ = false; ReadOnly = false; }
-    virtual ~DSi_SDDevice() {}
+    virtual ~DSi_SDDevice() = default;
 
     virtual void Reset() = 0;
 
@@ -155,8 +155,8 @@ private:
     u8 SSR[64];
 
     u32 BlockSize;
-    u64 RWAddress;
     u32 RWCommand;
+    u64 RWAddress;
 
     void SetState(u32 state) { CSR &= ~(0xF << 9); CSR |= (state << 9); }
 
