@@ -37,6 +37,8 @@
 #include "DSi_NDMA.h"
 #include "DSi_I2C.h"
 #include "DSi_SD.h"
+#include "DSi_SDIOHost.h"
+#include "DSi_SDMMCHost.h"
 #include "DSi_AES.h"
 #include "DSi_NAND.h"
 #include "DSi_DSP.h"
@@ -78,8 +80,8 @@ u32 NDMACnt[2];
 DSi_NDMA* NDMAs[8];
 
 unique_ptr<DSi_NAND::NANDMount> NAND;
-DSi_SDHost* SDMMC;
-DSi_SDHost* SDIO;
+DSi_SDMMCHost* SDMMC;
+DSi_SDIOHost* SDIO;
 
 u64 ConsoleID;
 std::array<u8, 16> eMMC_CID;
@@ -119,8 +121,8 @@ bool Init()
     NDMAs[6] = new DSi_NDMA(1, 2);
     NDMAs[7] = new DSi_NDMA(1, 3);
 
-    SDMMC = new DSi_SDHost(0);
-    SDIO = new DSi_SDHost(1);
+    SDMMC = new DSi_SDMMCHost();
+    SDIO = new DSi_SDIOHost();
 
     return true;
 }

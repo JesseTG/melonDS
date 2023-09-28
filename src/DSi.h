@@ -25,6 +25,9 @@
 #include "DSi_SD.h"
 #include "DSi_NAND.h"
 
+class DSi_SDMMCHost;
+class DSi_SDIOHost;
+
 namespace DSi
 {
 
@@ -39,8 +42,8 @@ extern u8 ARM7iBIOS[0x10000];
 extern std::array<u8, 16> eMMC_CID;
 extern u64 ConsoleID;
 
-extern DSi_SDHost* SDMMC;
-extern DSi_SDHost* SDIO;
+extern DSi_SDMMCHost* SDMMC;
+extern DSi_SDIOHost* SDIO;
 
 const u32 NWRAMSize = 0x40000;
 

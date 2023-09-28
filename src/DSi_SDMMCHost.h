@@ -21,8 +21,12 @@
 
 #include "DSi_SD.h"
 
-{
 class DSi_SDMMCHost final : public DSi_SDHost
+{
+public:
+    DSi_SDMMCHost();
+
+private:
 
 };
 

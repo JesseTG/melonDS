@@ -17,3 +17,8 @@
 */
 
 #include "DSi_SDMMCHost.h"
+
+DSi_SDMMCHost::DSi_SDMMCHost() : DSi_SDHost(0)
+{
+
+}
