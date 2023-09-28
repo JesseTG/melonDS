@@ -33,7 +33,7 @@ public:
     DSi_SDHost(u32 num);
     ~DSi_SDHost();
 
-    void CloseHandles();
+    [[deprecated("Use ResetDevices() instead")]] void CloseHandles();
     void Reset();
 
     void DoSavestate(Savestate* file);
@@ -86,8 +86,7 @@ private:
     u32 Param {};
     u16 ResponseBuffer[8] {};
 
-
-    DSi_SDDevice* Ports[2];
+    [[deprecated("Use the subclasses instead")]] DSi_SDDevice* Ports[2]{};
 
     u32 CurFIFO {}; // FIFO accessible for read/write
     FIFO<u16, 0x100> DataFIFO[2];
@@ -115,7 +114,7 @@ public:
     virtual void ContinueTransfer() = 0;
 
     bool IRQ;
-    bool ReadOnly;
+    [[deprecated("Move to DSi_MMCSDCardStorage, it's the only SDDevice that can be read-only")]] bool ReadOnly;
 
 protected:
     DSi_SDHost* Host;
@@ -141,9 +140,9 @@ public:
     void ContinueTransfer();
 
 private:
-    bool Internal;
     Platform::FileHandle* File;
     FATStorage* SD;
+    [[deprecated("Make this implicit in the subclass instead")]] bool Internal;
 
     u8 CID[16];
     u8 CSD[16];
