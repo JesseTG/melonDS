@@ -17,3 +17,11 @@
 */
 
 #include "DSi_MMCSDCardStorage.h"
+
+DSi_MMCSDCardStorage::DSi_MMCSDCardStorage(DSi_SDMMCHost* host, std::unique_ptr<FATStorage>&& sd) noexcept
+    : DSi_MMCStorage(host, false), SD(std::move(sd))
+{}
+
+DSi_MMCSDCardStorage::DSi_MMCSDCardStorage(DSi_SDMMCHost* host) noexcept
+    : DSi_MMCStorage(host, false)
+{}

@@ -21,9 +21,18 @@
 
 #include "DSi_MMCStorage.h"
 
+class FATStorage;
+
 class DSi_MMCSDCardStorage final : public DSi_MMCStorage
 {
+public:
+    DSi_MMCSDCardStorage(DSi_SDMMCHost* host, std::unique_ptr<FATStorage>&& sd) noexcept;
+    explicit DSi_MMCSDCardStorage(DSi_SDMMCHost* host) noexcept;
 
+    [[nodiscard]] const std::unique_ptr<FATStorage>& GetSDCard() const noexcept { return SD; }
+    [[nodiscard]] std::unique_ptr<FATStorage>& GetSDCard() noexcept { return SD; }
+private:
+    std::unique_ptr<FATStorage> SD;
 };
 
 #endif // DSI_MMCSDCARDSTORAGE_H
