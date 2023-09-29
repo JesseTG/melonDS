@@ -949,8 +949,6 @@ bool SetupNAND()
         NDS::ARM7->JumpTo(bootparams[6]);
     }
 
-    NAND->PatchUserData();
-
     return true;
 }
 
