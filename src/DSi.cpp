@@ -170,9 +170,6 @@ void Reset()
     DSi_CamModule::Reset();
     DSi_DSP::Reset();
 
-    SDMMC->CloseHandles();
-    SDIO->CloseHandles();
-
     InstallNAND();
 
     SDMMC->Reset();
