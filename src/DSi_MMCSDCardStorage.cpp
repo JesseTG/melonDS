@@ -17,6 +17,7 @@
 */
 
 #include "DSi_MMCSDCardStorage.h"
+#include "DSi_SDMMCHost.h"
 
 DSi_MMCSDCardStorage::DSi_MMCSDCardStorage(DSi_SDMMCHost* host, std::unique_ptr<FATStorage>&& sd) noexcept
     : DSi_MMCStorage(host, false), SD(std::move(sd))
@@ -25,3 +26,31 @@ DSi_MMCSDCardStorage::DSi_MMCSDCardStorage(DSi_SDMMCHost* host, std::unique_ptr<
 DSi_MMCSDCardStorage::DSi_MMCSDCardStorage(DSi_SDMMCHost* host) noexcept
     : DSi_MMCStorage(host, false)
 {}
+
+u32 DSi_MMCSDCardStorage::ReadBlock(u64 addr) noexcept
+{
+    u32 len = Host->GetTransferrableLen(BlockSize);
+
+    u8 data[0x200];
+    SD->ReadSectors((u32)(addr >> 9), 1, data);
+
+    return Host->DataRX(&data[addr & 0x1FF], len);
+}
+
+u32 DSi_MMCSDCardStorage::WriteBlock(u64 addr) noexcept
+{
+    u32 len = Host->GetTransferrableLen(BlockSize);
+
+    u8 data[0x200];
+    if (len < 0x200 && SD != nullptr)
+    {
+        SD->ReadSectors((u32)(addr >> 9), 1, data);
+    }
+
+    if ((len = Host->DataTX(&data[addr & 0x1FF], len)) && SD != nullptr && !SD->IsReadOnly())
+    {
+        SD->WriteSectors((u32)(addr >> 9), 1, data);
+    }
+
+    return len;
+}

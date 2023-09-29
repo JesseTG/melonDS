@@ -31,6 +31,9 @@ public:
 
     [[nodiscard]] const std::unique_ptr<FATStorage>& GetSDCard() const noexcept { return SD; }
     [[nodiscard]] std::unique_ptr<FATStorage>& GetSDCard() noexcept { return SD; }
+protected:
+    u32 ReadBlock(u64 addr) noexcept override;
+    u32 WriteBlock(u64 addr) noexcept override;
 private:
     std::unique_ptr<FATStorage> SD;
 };

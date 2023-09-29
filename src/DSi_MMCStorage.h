@@ -46,6 +46,9 @@ public:
 private:
     Platform::FileHandle* File;
     FATStorage* SD;
+protected:
+    virtual u32 ReadBlock(u64 addr) noexcept = 0;
+    virtual u32 WriteBlock(u64 addr) noexcept = 0;
     [[deprecated("Make this implicit in the subclass instead")]] bool Internal;
 
     u8 CID[16];
@@ -63,8 +66,6 @@ private:
 
     void SetState(u32 state) { CSR &= ~(0xF << 9); CSR |= (state << 9); }
 
-    u32 ReadBlock(u64 addr);
-    u32 WriteBlock(u64 addr);
 };
 
 #endif // DSI_MMCSTORAGE_H

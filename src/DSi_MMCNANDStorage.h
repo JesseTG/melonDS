@@ -37,6 +37,9 @@ public:
     [[nodiscard]] std::unique_ptr<DSi_NAND::NANDImage>& GetNAND() noexcept { return NAND; }
 
     [[nodiscard]] DSi_NAND::NANDMount MountNAND() noexcept;
+protected:
+    u32 ReadBlock(u64 addr) noexcept override;
+    u32 WriteBlock(u64 addr) noexcept override;
 private:
     std::unique_ptr<DSi_NAND::NANDImage> NAND;
 };

@@ -18,6 +18,7 @@
 
 #include "DSi_MMCNANDStorage.h"
 #include "DSi_NAND.h"
+#include "DSi_SDMMCHost.h"
 
 DSi_MMCNANDStorage::DSi_MMCNANDStorage(DSi_SDMMCHost* host, std::unique_ptr<DSi_NAND::NANDImage>&& nand) noexcept :
     DSi_MMCStorage(host, true),
@@ -33,4 +34,29 @@ DSi_MMCNANDStorage::DSi_MMCNANDStorage(DSi_SDMMCHost* host) noexcept :
 DSi_NAND::NANDMount DSi_MMCNANDStorage::MountNAND() noexcept
 {
     return NAND ? DSi_NAND::NANDMount(*NAND) : DSi_NAND::NANDMount();
+}
+
+u32 DSi_MMCNANDStorage::ReadBlock(u64 addr) noexcept
+{
+    u32 len = Host->GetTransferrableLen(BlockSize);
+
+    u8 data[0x200];
+    FileSeek(NAND->GetFile(), addr, Platform::FileSeekOrigin::Start);
+    FileRead(&data[addr & 0x1FF], 1, len, NAND->GetFile());
+
+    return Host->DataRX(&data[addr & 0x1FF], len);
+}
+
+u32 DSi_MMCNANDStorage::WriteBlock(u64 addr) noexcept
+{
+    u32 len = Host->GetTransferrableLen(BlockSize);
+
+    u8 data[0x200];
+    if ((len = Host->DataTX(&data[addr & 0x1FF], len)))
+    {
+        FileSeek(NAND->GetFile(), addr, Platform::FileSeekOrigin::Start);
+        FileWrite(&data[addr & 0x1FF], 1, len, NAND->GetFile());
+    }
+
+    return len;
 }
