@@ -27,6 +27,12 @@ void DSi_SDMMCHost::Reset() noexcept
 {
     DSi_SDHost::Reset();
 }
+
+DSi_NAND::NANDMount DSi_SDMMCHost::MountNAND() noexcept
+{
+    return NAND.MountNAND();
+}
+
 u16 DSi_SDMMCHost::ReadMMIO() noexcept
 {
     u16 ret = (IRQStatus & 0x031D);
