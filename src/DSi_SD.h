@@ -44,7 +44,6 @@ public:
 
     void CheckRX();
     void CheckTX();
-    bool TXReq {};
 
     void SetCardIRQ();
 
@@ -62,6 +61,7 @@ protected:
     DSi_SDHost(u32 num);
     virtual u16 ReadMMIO() noexcept = 0;
     u32 Num;
+    bool TXReq {};
     u16 PortSelect {};
     u16 SoftReset {};
     u16 SDClock {};
