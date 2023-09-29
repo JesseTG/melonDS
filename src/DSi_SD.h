@@ -29,7 +29,6 @@ class DSi_SDDevice;
 class DSi_SDHost
 {
 public:
-    DSi_SDHost(u32 num);
     ~DSi_SDHost();
 
     [[deprecated("Use ResetDevices() instead")]] void CloseHandles();
@@ -61,6 +60,7 @@ public:
     void CheckSwapFIFO();
 
 protected:
+    DSi_SDHost(u32 num);
     virtual u16 ReadMMIO() noexcept = 0;
     u32 Num;
     u16 PortSelect {};
