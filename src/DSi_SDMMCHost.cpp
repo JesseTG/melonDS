@@ -17,10 +17,11 @@
 */
 
 #include "DSi_SDMMCHost.h"
+#include "DSi_MMCStorage.h"
+#include "DSi.h"
 
-DSi_SDMMCHost::DSi_SDMMCHost() : DSi_SDHost(0)
+DSi_SDMMCHost::DSi_SDMMCHost() : DSi_SDHost(0), NAND(this)
 {
-
 }
 
 void DSi_SDMMCHost::Reset() noexcept

@@ -30,10 +30,9 @@ class DSi_SDHost;
 class DSi_SDDevice
 {
 public:
-    explicit DSi_SDDevice(DSi_SDHost* host) noexcept { Host = host; IRQ = false; ReadOnly = false; }
-    virtual ~DSi_SDDevice() noexcept = default;
+    DSi_SDDevice() noexcept : IRQ(false) {}
+    virtual ~DSi_SDDevice() noexcept = 0;
 
-    // TODO: Call in constructor (but don't deprecate, it needs to be called elsewhere too)
     virtual void Reset() noexcept = 0;
 
     virtual void DoSavestate(Savestate* file) noexcept = 0;
@@ -42,9 +41,5 @@ public:
     virtual void ContinueTransfer() noexcept = 0;
 
     bool IRQ;
-    [[deprecated("Move to DSi_MMCSDCardStorage, it's the only SDDevice that can be read-only")]] bool ReadOnly;
-
-protected:
-    [[deprecated("Make this a reference to the derived class that the DSi_SDDevice subclass actually needs")]] DSi_SDHost* Host;
 };
 #endif // DSI_SDDEVICE_H

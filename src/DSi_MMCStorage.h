@@ -24,15 +24,14 @@
 #include "types.h"
 #include "DSi_SDDevice.h"
 
+class DSi_SDMMCHost;
 
 class DSi_MMCStorage : public DSi_SDDevice
 {
 public:
-    DSi_MMCStorage(DSi_SDHost* host, bool internal, const std::string& filename);
-    DSi_MMCStorage(DSi_SDHost* host, bool internal, const std::string& filename, u64 size, bool readonly, const std::string& sourcedir);
-    ~DSi_MMCStorage() noexcept override;
+    ~DSi_MMCStorage() noexcept override = 0;
 
-    void Reset() noexcept override;
+    void Reset() noexcept final;
 
     void DoSavestate(Savestate* file) noexcept override;
 
@@ -43,12 +42,12 @@ public:
 
     void ContinueTransfer() noexcept override;
 
-private:
-    Platform::FileHandle* File;
-    FATStorage* SD;
 protected:
+    DSi_MMCStorage(DSi_SDMMCHost* host, bool internal);
     virtual u32 ReadBlock(u64 addr) noexcept = 0;
     virtual u32 WriteBlock(u64 addr) noexcept = 0;
+
+    DSi_SDMMCHost* Host;
     [[deprecated("Make this implicit in the subclass instead")]] bool Internal;
 
     u8 CID[16];

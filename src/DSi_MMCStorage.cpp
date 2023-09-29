@@ -18,43 +18,13 @@
 
 #include "DSi_MMCStorage.h"
 #include "Platform.h"
+#include "DSi_SDMMCHost.h"
 
 using namespace Platform;
 
-DSi_MMCStorage::DSi_MMCStorage(DSi_SDHost* host, bool internal, const std::string& filename)
-    : DSi_SDDevice(host)
+DSi_MMCStorage::DSi_MMCStorage(DSi_SDMMCHost* host, bool internal) : DSi_SDDevice(), Host(host), Internal(internal)
 {
-    Internal = internal;
-    File = Platform::OpenLocalFile(filename, FileMode::ReadWriteExisting);
-
-    SD = nullptr;
-
-    ReadOnly = false;
-}
-
-DSi_MMCStorage::DSi_MMCStorage(DSi_SDHost* host, bool internal, const std::string& filename, u64 size, bool readonly, const std::string& sourcedir)
-    : DSi_SDDevice(host)
-{
-    Internal = internal;
-    File = nullptr;
-
-    SD = new FATStorage(filename, size, readonly, sourcedir);
-    SD->Open();
-
-    ReadOnly = readonly;
-}
-
-DSi_MMCStorage::~DSi_MMCStorage() noexcept
-{
-    if (SD)
-    {
-        SD->Close();
-        delete SD;
-    }
-    if (File)
-    {
-        CloseFile(File);
-    }
+    Reset();
 }
 
 void DSi_MMCStorage::Reset() noexcept

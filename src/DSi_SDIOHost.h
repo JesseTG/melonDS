@@ -20,15 +20,17 @@
 #define DSI_SDIOHOST_H
 
 #include "DSi_SD.h"
+#include "DSi_NWifi.h"
 
 class DSi_SDIOHost final : public DSi_SDHost
 {
 public:
     DSi_SDIOHost();
     void Reset() noexcept override;
-
+protected:
+    u16 ReadMMIO() noexcept override;
 private:
-
+    DSi_NWifi NWifi;
 };
 
 #endif // DSI_SDIOHOST_H

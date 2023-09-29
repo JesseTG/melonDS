@@ -19,7 +19,11 @@
 #ifndef DSI_SDMMCHOST_H
 #define DSI_SDMMCHOST_H
 
+#include <optional>
+
 #include "DSi_SD.h"
+#include "DSi_MMCNANDStorage.h"
+#include "DSi_MMCSDCardStorage.h"
 
 class DSi_SDMMCHost final : public DSi_SDHost
 {
@@ -27,8 +31,16 @@ public:
     DSi_SDMMCHost();
     void Reset() noexcept override;
 
-private:
+    [[nodiscard]] const std::unique_ptr<DSi_NAND::NANDImage>& GetNAND() const noexcept { return NAND.GetNAND(); }
+    [[nodiscard]] std::unique_ptr<DSi_NAND::NANDImage>& GetNAND() noexcept { return NAND.GetNAND(); }
 
+
+    [[nodiscard]] DSi_NAND::NANDMount MountNAND() noexcept;
+protected:
+    u16 ReadMMIO() noexcept override;
+private:
+    std::optional<DSi_MMCSDCardStorage> SDCard;
+    DSi_MMCNANDStorage NAND;
 };
 
 #endif // DSI_SDMMCHOST_H
