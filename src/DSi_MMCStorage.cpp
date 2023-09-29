@@ -148,7 +148,7 @@ void DSi_MMCStorage::SendCMD(u8 cmd, u32 param) noexcept
 
     case 12: // stop operation
         SetState(0x04);
-        if (File) FileFlush(File);
+        StopOperation();
         RWCommand = 0;
         Host->SendResponse(CSR, true);
         return;

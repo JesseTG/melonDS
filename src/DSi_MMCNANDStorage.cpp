@@ -60,3 +60,8 @@ u32 DSi_MMCNANDStorage::WriteBlock(u64 addr) noexcept
 
     return len;
 }
+
+void DSi_MMCNANDStorage::StopOperation() noexcept
+{
+    FileFlush(NAND->GetFile());
+}

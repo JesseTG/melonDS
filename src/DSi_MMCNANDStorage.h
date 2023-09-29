@@ -40,6 +40,7 @@ public:
 protected:
     u32 ReadBlock(u64 addr) noexcept override;
     u32 WriteBlock(u64 addr) noexcept override;
+    void StopOperation() noexcept override;
 private:
     std::unique_ptr<DSi_NAND::NANDImage> NAND;
 };
