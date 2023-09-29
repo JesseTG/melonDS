@@ -64,14 +64,6 @@ DSi_SDHost::~DSi_SDHost()
     if (Ports[1]) delete Ports[1];
 }
 
-void DSi_SDHost::CloseHandles()
-{
-    if (Ports[0]) delete Ports[0];
-    if (Ports[1]) delete Ports[1];
-    Ports[0] = nullptr;
-    Ports[1] = nullptr;
-}
-
 void DSi_SDHost::Reset() noexcept
 {
     if (Num == 0)
@@ -111,8 +103,6 @@ void DSi_SDHost::Reset() noexcept
     StopAction = 0;
 
     TXReq = false;
-
-    CloseHandles();
 
     if (Num == 0)
     {

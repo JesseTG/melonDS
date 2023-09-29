@@ -700,9 +700,6 @@ void SoftReset()
     // the DSP most likely gets reset
     DSi_DSP::Reset();
 
-    SDMMC->CloseHandles();
-    SDIO->CloseHandles();
-
     InstallNAND();
 
     SDMMC->Reset();
