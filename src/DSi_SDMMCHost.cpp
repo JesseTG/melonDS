@@ -29,6 +29,15 @@ void DSi_SDMMCHost::Reset() noexcept
     DSi_SDHost::Reset();
 }
 
+void DSi_SDMMCHost::DoSavestate(Savestate* file) noexcept
+{
+    DSi_SDHost::DoSavestate(file);
+
+    NAND.DoSavestate(file);
+    if (SDCard && SDCard->GetSDCard())
+        SDCard->DoSavestate(file);
+}
+
 DSi_NAND::NANDMount DSi_SDMMCHost::MountNAND() noexcept
 {
     return NAND.MountNAND();

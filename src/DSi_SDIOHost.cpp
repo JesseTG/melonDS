@@ -24,6 +24,14 @@ DSi_SDIOHost::DSi_SDIOHost() : DSi_SDHost(1), NWifi(this)
 
 }
 
+
+void DSi_SDIOHost::DoSavestate(Savestate* file) noexcept
+{
+    DSi_SDHost::DoSavestate(file);
+
+    NWifi.DoSavestate(file);
+}
+
 void DSi_SDIOHost::Reset() noexcept
 {
     DSi_SDHost::Reset();

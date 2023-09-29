@@ -33,7 +33,7 @@ public:
 
     virtual void Reset() noexcept;
 
-    void DoSavestate(Savestate* file);
+    virtual void DoSavestate(Savestate* file) noexcept;
 
     static void FinishRX(u32 param);
     static void FinishTX(u32 param);

@@ -145,7 +145,7 @@ void DSi_SDHost::Reset() noexcept
     if (Ports[1]) Ports[1]->Reset();
 }
 
-void DSi_SDHost::DoSavestate(Savestate* file)
+void DSi_SDHost::DoSavestate(Savestate* file) noexcept
 {
     file->Section(Num ? "SDIO" : "SDMM");
 

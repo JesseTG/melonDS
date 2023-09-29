@@ -27,6 +27,7 @@ class DSi_SDIOHost final : public DSi_SDHost
 public:
     DSi_SDIOHost();
     void Reset() noexcept override;
+    void DoSavestate(Savestate* file) noexcept override;
 protected:
     u16 ReadMMIO() noexcept override;
 private:

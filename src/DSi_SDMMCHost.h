@@ -30,6 +30,7 @@ class DSi_SDMMCHost final : public DSi_SDHost
 public:
     DSi_SDMMCHost();
     void Reset() noexcept override;
+    void DoSavestate(Savestate* file) noexcept override;
 
     [[nodiscard]] const std::unique_ptr<DSi_NAND::NANDImage>& GetNAND() const noexcept { return NAND.GetNAND(); }
     [[nodiscard]] std::unique_ptr<DSi_NAND::NANDImage>& GetNAND() noexcept { return NAND.GetNAND(); }
