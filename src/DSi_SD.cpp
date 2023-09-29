@@ -293,7 +293,7 @@ u32 DSi_SDHost::DataRX(const u8* data, u32 len)
 
     u32 f = CurFIFO ^ 1;
     for (u32 i = 0; i < len; i += 2)
-        DataFIFO[f].Write(*(u16*)&data[i]);
+        DataFIFO[f].Write(*(const u16*)&data[i]);
 
     //CurFIFO = f;
     //SetIRQ(24);
