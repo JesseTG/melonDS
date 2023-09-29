@@ -180,8 +180,9 @@ void DSi_SDHost::DoSavestate(Savestate* file) noexcept
     DataFIFO[1].DoSavestate(file);
     DataFIFO32.DoSavestate(file);
 
-    if (Ports[0]) Ports[0]->DoSavestate(file);
-    if (Ports[1]) Ports[1]->DoSavestate(file);
+    // The individual DSi_SDHost subclasses
+    // override this method to call DoSaveState()
+    // on the DSi_SDDevices they own
 }
 
 
