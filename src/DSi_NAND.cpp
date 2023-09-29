@@ -655,6 +655,8 @@ bool NANDMount::PatchUserData(const DSiFirmwareSystemSettings& data) noexcept
 
         f_close(&file);
     }
+
+    return true;
 }
 
 
@@ -870,6 +872,8 @@ bool NANDMount::RemoveDir(const char* path) noexcept
 
     f_unlink(path);
     Log(LogLevel::Debug, "Removed directory at %s\n", path);
+
+    return true;
 }
 
 
@@ -940,6 +944,8 @@ bool NANDMount::ListTitles(u32 category, std::vector<u32>& titlelist) noexcept
     }
 
     f_closedir(&titledir);
+
+    return true;
 }
 
 bool NANDMount::TitleExists(u32 category, u32 titleid)
@@ -984,6 +990,8 @@ bool NANDMount::GetTitleInfo(u32 category, u32 titleid, u32& version, NDSHeader*
     }
 
     f_close(&file);
+
+    return true;
 }
 
 bool NANDMount::CreateTicket(const char* path, u32 titleid0, u32 titleid1, u8 version) noexcept
