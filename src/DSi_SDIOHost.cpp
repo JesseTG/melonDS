@@ -27,3 +27,11 @@ void DSi_SDIOHost::Reset() noexcept
 {
     DSi_SDHost::Reset();
 }
+
+u16 DSi_SDIOHost::ReadMMIO() noexcept
+{
+    u16 ret = (IRQStatus & 0x031D);
+    // SDIO wifi is always inserted, I guess
+    ret |= 0x00A0;
+    return ret;
+}

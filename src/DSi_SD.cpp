@@ -475,25 +475,7 @@ u16 DSi_SDHost::Read(u32 addr)
     case 0x018: return ResponseBuffer[6];
     case 0x01A: return ResponseBuffer[7];
 
-    case 0x01C:
-        {
-            u16 ret = (IRQStatus & 0x031D);
-
-            if (!Num)
-            {
-                if (Ports[0]) // basic check of whether the SD card is inserted
-                {
-                    ret |= 0x0020;
-                    if (!Ports[0]->ReadOnly) ret |= 0x0080;
-                }
-            }
-            else
-            {
-                // SDIO wifi is always inserted, I guess
-                ret |= 0x00A0;
-            }
-            return ret;
-        }
+    case 0x01C: return ReadMMIO();
     case 0x01E: return ((IRQStatus >> 16) & 0x8B7F);
     case 0x020: return IRQMask & 0x031D;
     case 0x022: return (IRQMask >> 16) & 0x8B7F;

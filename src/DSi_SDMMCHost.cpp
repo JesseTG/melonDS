@@ -27,3 +27,15 @@ void DSi_SDMMCHost::Reset() noexcept
 {
     DSi_SDHost::Reset();
 }
+u16 DSi_SDMMCHost::ReadMMIO() noexcept
+{
+    u16 ret = (IRQStatus & 0x031D);
+    if (SDCard && SDCard->GetSDCard()) // basic check of whether the SD card is inserted
+    {
+        ret |= 0x0020;
+        if (!SDCard->GetSDCard()->IsReadOnly())
+            ret |= 0x0080;
+    }
+
+    return ret;
+}

@@ -61,6 +61,7 @@ public:
     void CheckSwapFIFO();
 
 protected:
+    virtual u16 ReadMMIO() noexcept = 0;
     u32 Num;
     u16 PortSelect {};
     u16 SoftReset {};
