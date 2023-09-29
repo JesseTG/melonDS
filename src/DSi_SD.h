@@ -60,7 +60,7 @@ public:
     void UpdateFIFO32();
     void CheckSwapFIFO();
 
-private:
+protected:
     u32 Num;
     u16 PortSelect {};
     u16 SoftReset {};
