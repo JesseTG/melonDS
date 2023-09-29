@@ -24,6 +24,7 @@
 namespace DSi_NAND
 {
     class NANDImage;
+    class NANDMount;
 }
 
 class DSi_MMCNANDStorage final : public DSi_MMCStorage
@@ -35,6 +36,7 @@ public:
     [[nodiscard]] const std::unique_ptr<DSi_NAND::NANDImage>& GetNAND() const noexcept { return NAND; }
     [[nodiscard]] std::unique_ptr<DSi_NAND::NANDImage>& GetNAND() noexcept { return NAND; }
 
+    [[nodiscard]] DSi_NAND::NANDMount MountNAND() noexcept;
 private:
     std::unique_ptr<DSi_NAND::NANDImage> NAND;
 };

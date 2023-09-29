@@ -29,3 +29,8 @@ DSi_MMCNANDStorage::DSi_MMCNANDStorage(DSi_SDMMCHost* host) noexcept :
     DSi_MMCStorage(host, true)
 {
 }
+
+DSi_NAND::NANDMount DSi_MMCNANDStorage::MountNAND() noexcept
+{
+    return NAND ? DSi_NAND::NANDMount(*NAND) : DSi_NAND::NANDMount();
+}

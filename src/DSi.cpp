@@ -79,7 +79,6 @@ u32 NWRAMMask[2][3];
 u32 NDMACnt[2];
 DSi_NDMA* NDMAs[8];
 
-unique_ptr<DSi_NAND::NANDMount> NAND;
 DSi_SDMMCHost* SDMMC;
 DSi_SDIOHost* SDIO;
 
@@ -97,7 +96,7 @@ u8 GPIO_WiFi;
 
 void Set_SCFG_Clock9(u16 val);
 void Set_SCFG_MC(u32 val);
-bool SetupNAND();
+bool InstallNAND();
 
 bool Init()
 {
@@ -150,8 +149,6 @@ void DeInit()
         NDMAs[i] = nullptr;
     }
 
-    NAND = nullptr;
-
     delete SDMMC;
     SDMMC = nullptr;
     delete SDIO;
@@ -176,7 +173,7 @@ void Reset()
     SDMMC->CloseHandles();
     SDIO->CloseHandles();
 
-    SetupNAND();
+    InstallNAND();
 
     SDMMC->Reset();
     SDIO->Reset();
@@ -535,22 +532,23 @@ void SetupDirectBoot()
             ARM9Write32(0x02FFE000+i, tmp);
         }
 
-        if (NAND)
+        if (DSi_NAND::NANDMount nand = SDMMC->MountNAND())
         {
-            u8 userdata[0x1B0];
-            NAND->ReadUserData(userdata);
+            DSi_NAND::DSiFirmwareSystemSettings userdata {};
+            nand.ReadUserData(userdata);
             for (u32 i = 0; i < 0x128; i+=4)
-                ARM9Write32(0x02000400+i, *(u32*)&userdata[0x88+i]);
+                ARM9Write32(0x02000400+i, *(u32*)&userdata.Bytes[0x88+i]);
 
-            u8 hwinfoS[0xA4];
-            u8 hwinfoN[0x9C];
-            NAND->ReadHardwareInfo(hwinfoS, hwinfoN);
+            DSi_NAND::DSiSerialData hwinfoS {};
+            DSi_NAND::DsiHardwareInfoN hwinfoN {};
+            nand.ReadHardwareInfoS(hwinfoS);
+            nand.ReadHardwareInfoN(hwinfoN);
 
             for (u32 i = 0; i < 0x14; i+=4)
                 ARM9Write32(0x02000600+i, *(u32*)&hwinfoN[0x88+i]);
 
             for (u32 i = 0; i < 0x18; i+=4)
-                ARM9Write32(0x02FFFD68+i, *(u32*)&hwinfoS[0x88+i]);
+                ARM9Write32(0x02FFFD68+i, *(u32*)&hwinfoS.Bytes[0x88+i]);
         }
         else
         {
@@ -705,7 +703,7 @@ void SoftReset()
     SDMMC->CloseHandles();
     SDIO->CloseHandles();
 
-    SetupNAND();
+    InstallNAND();
 
     SDMMC->Reset();
     SDIO->Reset();
@@ -735,9 +733,9 @@ void SoftReset()
     GPU::DispStat[1] |= (1<<6);
 }
 
-bool SetupNAND()
+bool InstallNAND()
 {
-    if (!NAND)
+    if (!SDMMC->GetNAND())
     {
         Log(LogLevel::Error, "No NAND image loaded\n");
         return false;
@@ -745,7 +743,7 @@ bool SetupNAND()
 
     Log(LogLevel::Info, "Initializing DSi NAND\n");
 
-    FileHandle* nandfile = NAND->GetFile();
+    FileHandle* nandfile = SDMMC->GetNAND()->GetFile();
 
     // Make sure NWRAM is accessible.
     // The Bits are set to the startup values in Reset() and we might
@@ -766,7 +764,7 @@ bool SetupNAND()
     memset(NWRAMEnd, 0, sizeof(NWRAMEnd));
     memset(NWRAMMask, 0, sizeof(NWRAMMask));
 
-    u32 bootparams[8];
+    const DSi_NAND::Stage2BootInfo& bootparams = SDMMC->GetNAND()->GetBootInfo();
     if (Platform::GetConfigBool(Platform::DSi_FullBIOSBoot))
     {
         // TODO: figure out default MBK mapping
@@ -789,13 +787,10 @@ bool SetupNAND()
     }
     else
     {
-        FileSeek(nandfile, 0x220, FileSeekOrigin::Start);
-        FileRead(bootparams, 4, 8, nandfile);
-
         Log(LogLevel::Debug, "ARM9: offset=%08X size=%08X RAM=%08X size_aligned=%08X\n",
-               bootparams[0], bootparams[1], bootparams[2], bootparams[3]);
+               bootparams.ARM9BootcodeOffset, bootparams.ARM9Size, bootparams.ARM9RAMAddress, bootparams.ARM9SizeAligned);
         Log(LogLevel::Debug, "ARM7: offset=%08X size=%08X RAM=%08X size_aligned=%08X\n",
-               bootparams[4], bootparams[5], bootparams[6], bootparams[7]);
+               bootparams.ARM7BootcodeOffset, bootparams.ARM7Size, bootparams.ARM7RAMAddress, bootparams.ARM7SizeAligned);
 
         // read and apply new-WRAM settings
 
@@ -803,8 +798,7 @@ bool SetupNAND()
         MBK[1][8] = 0;
 
         u32 mbk[12];
-        FileSeek(nandfile, 0x380, FileSeekOrigin::Start);
-        FileRead(mbk, 4, 12, nandfile);
+        memcpy(mbk, &bootparams.Bytes[0x10], sizeof(mbk));
 
         MapNWRAM_A(0, mbk[0] & 0xFF);
         MapNWRAM_A(1, (mbk[0] >> 8) & 0xFF);
@@ -850,17 +844,17 @@ bool SetupNAND()
         u8 tmp[16];
         u32 dstaddr;
 
-        *(u32*)&tmp[0] = bootparams[3];
-        *(u32*)&tmp[4] = -bootparams[3];
-        *(u32*)&tmp[8] = ~bootparams[3];
+        *(u32*)&tmp[0] = bootparams.ARM9SizeAligned;
+        *(u32*)&tmp[4] = -bootparams.ARM9SizeAligned;
+        *(u32*)&tmp[8] = ~bootparams.ARM9SizeAligned;
         *(u32*)&tmp[12] = 0;
         Bswap128(boot2iv, tmp);
 
         AES_init_ctx_iv(&ctx, boot2key, boot2iv);
 
-        FileSeek(nandfile, bootparams[0], FileSeekOrigin::Start);
-        dstaddr = bootparams[2];
-        for (u32 i = 0; i < bootparams[3]; i += 16)
+        FileSeek(nandfile, bootparams.ARM9BootcodeOffset, FileSeekOrigin::Start);
+        dstaddr = bootparams.ARM9RAMAddress;
+        for (u32 i = 0; i < bootparams.ARM9SizeAligned; i += 16)
         {
             u32 data[4];
             FileRead(data, 16, 1, nandfile);
@@ -875,17 +869,17 @@ bool SetupNAND()
             ARM9Write32(dstaddr, data[3]); dstaddr += 4;
         }
 
-        *(u32*)&tmp[0] = bootparams[7];
-        *(u32*)&tmp[4] = -bootparams[7];
-        *(u32*)&tmp[8] = ~bootparams[7];
+        *(u32*)&tmp[0] = bootparams.ARM7SizeAligned;
+        *(u32*)&tmp[4] = -bootparams.ARM7SizeAligned;
+        *(u32*)&tmp[8] = ~bootparams.ARM7SizeAligned;
         *(u32*)&tmp[12] = 0;
         Bswap128(boot2iv, tmp);
 
         AES_init_ctx_iv(&ctx, boot2key, boot2iv);
 
-        FileSeek(nandfile, bootparams[4], FileSeekOrigin::Start);
-        dstaddr = bootparams[6];
-        for (u32 i = 0; i < bootparams[7]; i += 16)
+        FileSeek(nandfile, bootparams.ARM7BootcodeOffset, FileSeekOrigin::Start);
+        dstaddr = bootparams.ARM7RAMAddress;
+        for (u32 i = 0; i < bootparams.ARM7SizeAligned; i += 16)
         {
             u32 data[4];
             FileRead(data, 16, 1, nandfile);
@@ -901,8 +895,8 @@ bool SetupNAND()
         }
     }
 
-    eMMC_CID = NAND->GetEMMCCID();
-    ConsoleID = NAND->GetConsoleID();
+    eMMC_CID = SDMMC->GetNAND()->GetEMMCCID();
+    ConsoleID = SDMMC->GetNAND()->GetConsoleID();
 
     char cidstring[33];
     for (int z = 0; z < 16; z++)
@@ -945,8 +939,8 @@ bool SetupNAND()
             ARM7Write32(0x03FFC400+i, *(u32*)&ARM7Init[i]);
 
         // repoint the CPUs to the boot2 binaries
-        NDS::ARM9->JumpTo(bootparams[2]);
-        NDS::ARM7->JumpTo(bootparams[6]);
+        NDS::ARM9->JumpTo(bootparams.ARM9RAMAddress);
+        NDS::ARM7->JumpTo(bootparams.ARM7RAMAddress);
     }
 
     return true;
