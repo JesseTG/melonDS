@@ -71,6 +71,8 @@ public:
     static std::unique_ptr<NANDImage> New(Platform::FileHandle& nandfile, const AESKey& es_keyY) noexcept;
 };
 
+union DSiSerialData;
+
 class NANDMount
 {
 public:
@@ -208,17 +210,21 @@ enum class ConsoleRegion : u8
 /// the rest is FF-padded.
 /// This struct excludes the padding.
 /// @see https://problemkaputt.de/gbatek.htm#dsisdmmcfirmwaremiscfiles
-struct DSiSerialData
+union DSiSerialData
 {
-    u8 RsaSha1HMAC[0x80];
-    u32 Version;
-    u32 EntrySize;
-    u32 SupportedLanguages;
-    u8 Unknown0[4];
-    ConsoleRegion Region;
-    char Serial[12];
-    u8 Unknown1[3];
-    u8 TitleIDLSBs[4];
+    u8 Bytes[164];
+    struct
+    {
+        u8 RsaSha1HMAC[0x80];
+        u32 Version;
+        u32 EntrySize;
+        u32 SupportedLanguages;
+        u8 Unknown0[4];
+        ConsoleRegion Region;
+        char Serial[12];
+        u8 Unknown1[3];
+        u8 TitleIDLSBs[4];
+    };
 };
 
 static_assert(sizeof(DSiSerialData) == 164, "DSiSerialData must be exactly 164 bytes");
