@@ -49,17 +49,33 @@ enum
 typedef std::array<u8, 16> AESKey;
 using DsiHardwareInfoN = std::array<u8, 0x9C>;
 union DSiFirmwareSystemSettings;
-struct BootParameters
+/// @see https://problemkaputt.de/gbatek.htm#dsisdmmcinternalnandlayout
+union Stage2BootInfo
 {
-    u32 ARM9Offset;
-    u32 ARM9Size;
-    u32 ARM9RAM;
-    u32 ARM9SizeAligned;
-    u32 ARM7Offset;
-    u32 ARM7Size;
-    u32 ARM7RAM;
-    u32 ARM7SizeAligned;
+    struct
+    {
+        u8 Zero0[0x20];
+        u32 ARM9BootcodeOffset;
+        u32 ARM9Size;
+        u32 ARM9RAMAddress;
+        u32 ARM9SizeAligned;
+        u32 ARM7BootcodeOffset;
+        u32 ARM7Size;
+        u32 ARM7RAMAddress;
+        u32 ARM7SizeAligned;
+        u8 Zero1[0xBF];
+        u8 ARMLoadmodeFlags;
+        u8 RSABlock[0x80];
+        u8 GlobalMBKSlotSettings[0x14];
+        u8 LocalMBKWRAMARM9[0xC];
+        u8 LocalMBKWRAMARM7[0xC];
+        u8 GlobalMBK9[4];
+        u8 Zero2[0x50];
+    };
+    u8 Bytes[0x200];
 };
+
+static_assert(sizeof(Stage2BootInfo) == 0x200, "Stage2BootInfo must be exactly 512 bytes");
 
 /// Represents a raw DSi NAND image before it's mounted by fatfs.
 /// Since fatfs can only mount a limited number of file systems at once,
