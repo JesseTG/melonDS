@@ -29,7 +29,7 @@ class DSi_SDDevice;
 class DSi_SDHost
 {
 public:
-    ~DSi_SDHost();
+    virtual ~DSi_SDHost() noexcept;
 
     virtual void Reset() noexcept;
 

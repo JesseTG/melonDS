@@ -58,11 +58,7 @@ DSi_SDHost::DSi_SDHost(u32 num)
     Ports[1] = nullptr;
 }
 
-DSi_SDHost::~DSi_SDHost()
-{
-    if (Ports[0]) delete Ports[0];
-    if (Ports[1]) delete Ports[1];
-}
+DSi_SDHost::~DSi_SDHost() noexcept = default;
 
 void DSi_SDHost::Reset() noexcept
 {
