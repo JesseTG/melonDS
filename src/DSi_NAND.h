@@ -25,6 +25,8 @@
 #include "DSi_TMD.h"
 #include "SPI_Firmware.h"
 #include <array>
+#include <memory>
+#include <optional>
 #include <vector>
 #include <string>
 
@@ -39,6 +41,8 @@ constexpr u32 MainPartitionType = FS_FAT16;
 constexpr u32 PhotoPartitionOffset = 0x0CF09A00;
 constexpr u32 PhotoPartitionType = FS_FAT12;
 
+constexpr u32 Stage2BootInfoBlock1Offset = 0x200;
+
 enum
 {
     TitleData_PublicSav,
@@ -47,8 +51,11 @@ enum
 };
 
 typedef std::array<u8, 16> AESKey;
+// TODO: Turn this into a proper struct with named fields
 using DsiHardwareInfoN = std::array<u8, 0x9C>;
 union DSiFirmwareSystemSettings;
+class NANDMount;
+
 /// @see https://problemkaputt.de/gbatek.htm#dsisdmmcinternalnandlayout
 union Stage2BootInfo
 {
@@ -84,7 +91,32 @@ class NANDImage
 {
 public:
     static std::unique_ptr<NANDImage> New(const std::string& nandpath, const AESKey& es_keyY) noexcept;
-    static std::unique_ptr<NANDImage> New(Platform::FileHandle& nandfile, const AESKey& es_keyY) noexcept;
+    static std::unique_ptr<NANDImage> New(Platform::FileHandle* nandfile, const AESKey& es_keyY) noexcept;
+    NANDImage(const NANDImage&) = delete;
+    NANDImage(NANDImage&&) noexcept;
+    NANDImage& operator=(const NANDImage&) = delete;
+    NANDImage& operator=(NANDImage&&) noexcept;
+    ~NANDImage() noexcept;
+
+    [[nodiscard]] u64 GetConsoleID() const noexcept { return ConsoleID; }
+    [[nodiscard]] const std::array<u8, 16>& GetEMMCCID() const noexcept { return eMMC_CID; }
+    [[nodiscard]] Platform::FileHandle* GetFile() noexcept { return CurFile; }
+    [[nodiscard]] const Stage2BootInfo& GetBootInfo() const noexcept { return BootInfo; }
+private:
+    friend class NANDMount;
+    NANDImage(Platform::FileHandle* nandfile) noexcept;
+    u32 ReadFATBlock(u64 addr, u32 len, u8* buf) noexcept;
+    u32 WriteFATBlock(u64 addr, u32 len, const u8* buf) noexcept;
+    void SetupFATCrypto(AES_ctx* ctx, u32 ctr) noexcept;
+    bool ESEncrypt(u8* data, u32 len) noexcept;
+    bool ESDecrypt(u8* data, u32 len) noexcept;
+    Platform::FileHandle* CurFile;
+    std::array<u8, 16> eMMC_CID {};
+    u64 ConsoleID {};
+    u8 FATIV[16] {};
+    u8 FATKey[16] {};
+    u8 ESKey[16] {};
+    Stage2BootInfo BootInfo {};
 };
 
 union DSiSerialData;
@@ -92,42 +124,36 @@ union DSiSerialData;
 class NANDMount
 {
 public:
-    static std::unique_ptr<NANDMount> New(Platform::FileHandle* nandfile, const AESKey& es_keyY) noexcept;
+    NANDMount() noexcept;
+    explicit NANDMount(NANDImage& image) noexcept;
     NANDMount(const NANDMount&) = delete;
-    NANDMount(NANDMount&&) noexcept;
+    NANDMount(NANDMount&& other) = delete;
     NANDMount& operator=(const NANDMount&) = delete;
-    NANDMount& operator=(NANDMount&&) noexcept;
+    NANDMount& operator=(NANDMount&&) = delete;
     ~NANDMount() noexcept;
 
-    [[nodiscard]] u64 GetConsoleID() const noexcept { return ConsoleID; }
-    [[nodiscard]] const std::array<u8, 16>& GetEMMCCID() const noexcept { return eMMC_CID; }
-    Platform::FileHandle* GetFile() noexcept { return CurFile; }
-    // TODO: Split everything that doesn't need a mounted file system into a NANDImage
-    // (I.e. data that's part of the image, but not part of the file system, like the console ID)
-    void ReadHardwareInfo(u8* dataS, u8* dataN);
+    bool ReadHardwareInfoS(DSiSerialData& data) noexcept;
+    bool ReadHardwareInfoN(DsiHardwareInfoN& data) noexcept;
 
-    void ReadUserData(u8* data);
-    void PatchUserData();
-    void ListTitles(u32 category, std::vector<u32>& titlelist);
+    bool ReadUserData(DSiFirmwareSystemSettings& data) noexcept;
+    bool PatchUserData(const DSiFirmwareSystemSettings& data) noexcept;
+    bool ListTitles(u32 category, std::vector<u32>& titlelist) noexcept;
     bool TitleExists(u32 category, u32 titleid);
-    void GetTitleInfo(u32 category, u32 titleid, u32& version, NDSHeader* header, NDSBanner* banner);
+    bool GetTitleInfo(u32 category, u32 titleid, u32& version, NDSHeader* header, NDSBanner* banner) noexcept;
     bool ImportTitle(const char* appfile, const DSi_TMD::TitleMetadata& tmd, bool readonly);
     bool ImportTitle(const u8* app, size_t appLength, const DSi_TMD::TitleMetadata& tmd, bool readonly);
-    void DeleteTitle(u32 category, u32 titleid);
-    void RemoveFile(const char* path);
-    void RemoveDir(const char* path);
+    bool DeleteTitle(u32 category, u32 titleid) noexcept;
+    bool RemoveFile(const char* path) noexcept;
+    bool RemoveDir(const char* path) noexcept;
     u32 GetTitleDataMask(u32 category, u32 titleid);
     bool ImportTitleData(u32 category, u32 titleid, int type, const char* file);
     bool ExportTitleData(u32 category, u32 titleid, int type, const char* file);
 
+    explicit operator bool() const noexcept { return Image != nullptr; }
+
     // Temporarily public
-    u32 ReadFATBlock(u64 addr, u32 len, u8* buf) noexcept;
-    u32 WriteFATBlock(u64 addr, u32 len, const u8* buf) noexcept;
 private:
-    NANDMount(Platform::FileHandle* nandfile) noexcept;
-    void SetupFATCrypto(AES_ctx* ctx, u32 ctr) noexcept;
-    bool ESEncrypt(u8* data, u32 len) noexcept;
-    bool ESDecrypt(u8* data, u32 len) noexcept;
+    friend class NANDImage;
     bool ImportFile(const char* path, const u8* data, size_t len) noexcept;
     bool ImportFile(const char* path, const char* in) noexcept;
     bool ExportFile(const char* path, const char* out) noexcept;
@@ -136,12 +162,7 @@ private:
     bool CreateSaveFile(const char* path, u32 len) noexcept;
     bool InitTitleFileStructure(const NDSHeader& header, const DSi_TMD::TitleMetadata& tmd, bool readonly) noexcept;
     FATFS CurFS {};
-    Platform::FileHandle* CurFile;
-    std::array<u8, 16> eMMC_CID {};
-    u64 ConsoleID {};
-    u8 FATIV[16] {};
-    u8 FATKey[16] {};
-    u8 ESKey[16] {};
+    NANDImage* Image;
 };
 
 typedef std::array<u8, 20> SHA1Hash;

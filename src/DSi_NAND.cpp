@@ -64,46 +64,14 @@ static const char* FResultToString(FRESULT res)
     }
 }
 
-std::unique_ptr<NANDMount> NANDMount::New(Platform::FileHandle* nandfile, const AESKey& es_keyY) noexcept
+std::unique_ptr<NANDImage> NANDImage::New(Platform::FileHandle* nandfile, const AESKey& es_keyY) noexcept
 {
     if (!nandfile)
         return nullptr;
 
-    unique_ptr<NANDMount> nand(new NANDMount(nandfile));
-    NANDMount* nandptr = nand.get();
-    u64 nandlen = FileLength(nandfile);
-
-    ff_disk_open(
-        [nandptr] (BYTE* buf, LBA_t sector, UINT num)
-        {
-            // TODO: allow selecting other partitions?
-            u64 baseaddr = 0x10EE00;
-
-            u64 blockaddr = baseaddr + (sector * 0x200ULL);
-
-            u32 res = nandptr->ReadFATBlock(blockaddr, num*0x200, buf);
-            return res >> 9;
-        },
-        [nandptr] (BYTE* buf, LBA_t sector, UINT num)
-        {
-            // TODO: allow selecting other partitions?
-            u64 baseaddr = 0x10EE00;
-
-            u64 blockaddr = baseaddr + (sector * 0x200ULL);
-
-            u32 res = nandptr->WriteFATBlock(blockaddr, num*0x200, buf);
-            return res >> 9;
-        },
-        (LBA_t)(nandlen>>9)
-    );
-
-    // fatfs keeps a reference to CurFS, so it must stay valid
-    if (FRESULT res = f_mount(&nand->CurFS, "0:", 0); res != FR_OK)
-    {
-        Log(LogLevel::Error, "NAND mounting failed: %d\n", res);
-        // nand's destructor unmounts the file system
-        return nullptr;
-    }
+    // TODO: Move this declaration to after the nocash footer check
+    // (so we can put most of the logic inside the actual constructor)
+    unique_ptr<NANDImage> nand(new NANDImage(nandfile));
 
     // read the nocash footer
 
@@ -165,24 +133,23 @@ std::unique_ptr<NANDMount> NANDMount::New(Platform::FileHandle* nandfile, const 
     DSi_AES::DeriveNormalKey(keyX, keyY, tmp);
     Bswap128(nand->ESKey, tmp);
 
+    FileSeek(nandfile, Stage2BootInfoBlock1Offset, FileSeekOrigin::Start);
+    FileRead(&nand->BootInfo, sizeof(nand->BootInfo), 1, nandfile);
     return nand;
 }
 
 
-NANDMount::NANDMount(Platform::FileHandle* nandfile) noexcept : CurFile(nandfile)
+NANDImage::NANDImage(Platform::FileHandle* nandfile) noexcept : CurFile(nandfile)
 {
 }
 
-NANDMount::~NANDMount() noexcept
+NANDImage::~NANDImage() noexcept
 {
-    f_unmount("0:");
-    ff_disk_close();
-
     if (CurFile) CloseFile(CurFile);
     CurFile = nullptr;
 }
 
-void NANDMount::SetupFATCrypto(AES_ctx* ctx, u32 ctr) noexcept
+void NANDImage::SetupFATCrypto(AES_ctx* ctx, u32 ctr) noexcept
 {
     u8 iv[16];
     memcpy(iv, FATIV, sizeof(iv));
@@ -206,7 +173,7 @@ void NANDMount::SetupFATCrypto(AES_ctx* ctx, u32 ctr) noexcept
     AES_init_ctx_iv(ctx, FATKey, iv);
 }
 
-u32 NANDMount::ReadFATBlock(u64 addr, u32 len, u8* buf) noexcept
+u32 NANDImage::ReadFATBlock(u64 addr, u32 len, u8* buf) noexcept
 {
     u32 ctr = (u32)(addr >> 4);
 
@@ -228,7 +195,7 @@ u32 NANDMount::ReadFATBlock(u64 addr, u32 len, u8* buf) noexcept
     return len;
 }
 
-u32 NANDMount::WriteFATBlock(u64 addr, u32 len, const u8* buf) noexcept
+u32 NANDImage::WriteFATBlock(u64 addr, u32 len, const u8* buf) noexcept
 {
     u32 ctr = (u32)(addr >> 4);
 
@@ -256,7 +223,7 @@ u32 NANDMount::WriteFATBlock(u64 addr, u32 len, const u8* buf) noexcept
     return len;
 }
 
-bool NANDMount::ESEncrypt(u8* data, u32 len) noexcept
+bool NANDImage::ESEncrypt(u8* data, u32 len) noexcept
 {
     AES_ctx ctx;
     u8 iv[16];
@@ -341,7 +308,7 @@ bool NANDMount::ESEncrypt(u8* data, u32 len) noexcept
     return true;
 }
 
-bool NANDMount::ESDecrypt(u8* data, u32 len) noexcept
+bool NANDImage::ESDecrypt(u8* data, u32 len) noexcept
 {
     AES_ctx ctx;
     u8 iv[16];
@@ -446,79 +413,177 @@ bool NANDMount::ESDecrypt(u8* data, u32 len) noexcept
     return true;
 }
 
+NANDMount::NANDMount() noexcept : Image(nullptr) {}
 
-void NANDMount::ReadHardwareInfo(u8* dataS, u8* dataN)
+NANDMount::NANDMount(NANDImage& image) noexcept : Image(&image)
 {
-    FF_FIL file;
-    FRESULT res;
-    u32 nread;
+    u64 nandlen = FileLength(Image->CurFile);
 
-    res = f_open(&file, "0:/sys/HWINFO_S.dat", FA_OPEN_EXISTING | FA_READ);
-    if (res == FR_OK)
-    {
-        f_read(&file, dataS, 0xA4, &nread);
-        f_close(&file);
-    }
+    ff_disk_open(
+        [this] (BYTE* buf, LBA_t sector, UINT num)
+        {
+            // TODO: allow selecting other partitions?
+            u64 blockaddr = MainPartitionOffset + (sector * 0x200ULL);
 
-    res = f_open(&file, "0:/sys/HWINFO_N.dat", FA_OPEN_EXISTING | FA_READ);
-    if (res == FR_OK)
+            u32 res = this->Image->ReadFATBlock(blockaddr, num*0x200, buf);
+            return res >> 9;
+        },
+        [this] (BYTE* buf, LBA_t sector, UINT num)
+        {
+            // TODO: allow selecting other partitions?
+            u64 blockaddr = MainPartitionOffset + (sector * 0x200ULL);
+
+            u32 res = this->Image->WriteFATBlock(blockaddr, num*0x200, buf);
+            return res >> 9;
+        },
+        (LBA_t)(nandlen >> 9)
+    );
+
+    // TODO: Pass in a mount point parameter
+    // fatfs keeps a reference to CurFS, so it must stay valid
+    if (FRESULT res = f_mount(&CurFS, "0:", 0); res != FR_OK)
     {
-        f_read(&file, dataN, 0x9C, &nread);
-        f_close(&file);
+        Log(LogLevel::Error, "NAND mounting failed: %d\n", res);
+        Image = nullptr;
     }
 }
 
-
-void NANDMount::ReadUserData(u8* data)
+NANDMount::~NANDMount() noexcept
 {
-    FF_FIL file;
-    FRESULT res;
-    u32 nread;
-
-    FF_FIL f1, f2;
-    int v1, v2;
-
-    res = f_open(&f1, "0:/shared1/TWLCFG0.dat", FA_OPEN_EXISTING | FA_READ);
-    if (res != FR_OK)
-        v1 = -1;
-    else
-    {
-        u8 tmp;
-        f_lseek(&f1, 0x81);
-        f_read(&f1, &tmp, 1, &nread);
-        v1 = tmp;
-    }
-
-    res = f_open(&f2, "0:/shared1/TWLCFG1.dat", FA_OPEN_EXISTING | FA_READ);
-    if (res != FR_OK)
-        v2 = -1;
-    else
-    {
-        u8 tmp;
-        f_lseek(&f2, 0x81);
-        f_read(&f2, &tmp, 1, &nread);
-        v2 = tmp;
-    }
-
-    if (v1 < 0 && v2 < 0) return;
-
-    if (v2 > v1)
-    {
-        file = f2;
-        f_close(&f1);
-    }
-    else
-    {
-        file = f1;
-        f_close(&f2);
-    }
-
-    f_lseek(&file, 0);
-    f_read(&file, data, 0x1B0, &nread);
-    f_close(&file);
+    f_unmount("0:");
+    ff_disk_close();
 }
 
-void NANDMount::PatchUserData()
+bool NANDMount::ReadHardwareInfoS(DSiSerialData& data) noexcept
+{
+    FF_FIL file;
+
+    if (FRESULT res = f_open(&file, "0:/sys/HWINFO_S.dat", FA_OPEN_EXISTING | FA_READ); res != FR_OK)
+    {
+        Log(LogLevel::Error, "NAND: Opening file HWINFO_S.dat failed with %s\n", FResultToString(res));
+        return false;
+    }
+
+    UINT bytesRead = 0;
+    DSiSerialData readData {};
+    if (FRESULT res = f_read(&file, &readData, sizeof(data), &bytesRead); res != FR_OK)
+    {
+        Log(LogLevel::Error, "NAND: Reading file HWINFO_S.dat failed with %s\n", FResultToString(res));
+        f_close(&file);
+        return false;
+    }
+
+    if (bytesRead < sizeof(data))
+    {
+        Log(LogLevel::Error, "NAND: Reading file HWINFO_S.dat failed: read %d bytes, expected %d\n", bytesRead, sizeof(data));
+        f_close(&file);
+        return false;
+    }
+
+    memcpy(&data, &readData, sizeof(data));
+    return true;
+}
+
+bool NANDMount::ReadHardwareInfoN(DsiHardwareInfoN& data) noexcept
+{
+    FF_FIL file;
+
+    if (FRESULT res = f_open(&file, "0:/sys/HWINFO_N.dat", FA_OPEN_EXISTING | FA_READ); res != FR_OK)
+    {
+        Log(LogLevel::Error, "NAND: Opening file HWINFO_N.dat failed with %s\n", FResultToString(res));
+        return false;
+    }
+
+    UINT bytesRead = 0;
+    DsiHardwareInfoN readData {};
+    if (FRESULT res = f_read(&file, &readData, sizeof(data), &bytesRead); res != FR_OK)
+    {
+        Log(LogLevel::Error, "NAND: Reading file HWINFO_N.dat failed with %s\n", FResultToString(res));
+        f_close(&file);
+        return false;
+    }
+
+    if (bytesRead < sizeof(data))
+    {
+        Log(LogLevel::Error, "NAND: Reading file HWINFO_N.dat failed: read %d bytes, expected %d\n", bytesRead, sizeof(data));
+        f_close(&file);
+        return false;
+    }
+
+    memcpy(&data, &readData, sizeof(data));
+    return true;
+}
+
+bool NANDMount::ReadUserData(DSiFirmwareSystemSettings& data) noexcept
+{
+    FF_FIL twlcfg0, twlcfg1;
+    DSiFirmwareSystemSettings settings0, settings1;
+    bool settings0Ok = false, settings1Ok = false;
+    UINT bytesRead0, bytesRead1;
+
+    if (FRESULT res = f_open(&twlcfg0, "0:/shared1/TWLCFG0.dat", FA_OPEN_EXISTING | FA_READ); res != FR_OK)
+    {
+        Log(LogLevel::Warn, "NAND: Failed to open TWLCFG0.dat with %s\n", FResultToString(res));
+    }
+    else
+    {
+        if (res = f_read(&twlcfg0, &settings0, sizeof(settings0), &bytesRead0); res != FR_OK)
+        {
+            Log(LogLevel::Warn, "NAND: Failed to read from TWLCFG0.dat with %s\n", FResultToString(res));
+        }
+        else if (bytesRead0 < sizeof(settings0))
+        {
+            Log(LogLevel::Warn, "NAND: Failed to read from TWLCFG0.dat: read %d bytes, expected %d\n", bytesRead0, sizeof(settings0));
+        }
+        else
+        {
+            settings0Ok = true;
+        }
+        f_close(&twlcfg0);
+    }
+
+    if (FRESULT res = f_open(&twlcfg1, "0:/shared1/TWLCFG1.dat", FA_OPEN_EXISTING | FA_READ); res != FR_OK)
+    {
+        Log(LogLevel::Warn, "NAND: Failed to open TWLCFG1.dat with %s\n", FResultToString(res));
+    }
+    else
+    {
+        if (res = f_read(&twlcfg1, &settings1, sizeof(settings1), &bytesRead1); res != FR_OK)
+        {
+            Log(LogLevel::Warn, "NAND: Failed to read from TWLCFG1.dat with %s\n", FResultToString(res));
+        }
+        else if (bytesRead1 < sizeof(settings1))
+        {
+            Log(LogLevel::Warn, "NAND: Failed to read from TWLCFG1.dat: read %d bytes, expected %d\n", bytesRead1, sizeof(settings1));
+        }
+        else
+        {
+            settings1Ok = true;
+        }
+        f_close(&twlcfg1);
+    }
+
+    if (settings0Ok && settings1Ok)
+    {
+        data = (settings0.UpdateCounter > settings1.UpdateCounter) ? settings0 : settings1;
+        return true;
+    }
+    else if (settings0Ok)
+    {
+        data = settings0;
+        return true;
+    }
+    else if (settings1Ok)
+    {
+        data = settings1;
+        return true;
+    }
+
+    Log(LogLevel::Error, "NAND: Failed to read TWLCFG0.dat and TWLCFG1.dat\n");
+    return false;
+}
+
+bool NANDMount::PatchUserData(const DSiFirmwareSystemSettings& data) noexcept
 {
     FRESULT res;
 
@@ -739,33 +804,34 @@ bool NANDMount::ExportFile(const char* path, const char* out) noexcept
     return true;
 }
 
-void NANDMount::RemoveFile(const char* path)
+bool NANDMount::RemoveFile(const char* path) noexcept
 {
     FF_FILINFO info;
     FRESULT res = f_stat(path, &info);
-    if (res != FR_OK) return;
+    if (res != FR_OK) return false;
 
     if (info.fattrib & AM_RDO)
         f_chmod(path, 0, AM_RDO);
 
     f_unlink(path);
     Log(LogLevel::Debug, "Removed file at %s\n", path);
+    return true;
 }
 
-void NANDMount::RemoveDir(const char* path)
+bool NANDMount::RemoveDir(const char* path) noexcept
 {
     FF_DIR dir;
     FF_FILINFO info;
     FRESULT res;
 
     res = f_stat(path, &info);
-    if (res != FR_OK) return;
+    if (res != FR_OK) return false;
 
     if (info.fattrib & AM_RDO)
         f_chmod(path, 0, AM_RDO);
 
     res = f_opendir(&dir, path);
-    if (res != FR_OK) return;
+    if (res != FR_OK) return false;
 
     std::vector<std::string> dirlist;
     std::vector<std::string> filelist;
@@ -827,7 +893,7 @@ u32 NANDMount::GetTitleVersion(u32 category, u32 titleid) noexcept
     return version;
 }
 
-void NANDMount::ListTitles(u32 category, std::vector<u32>& titlelist)
+bool NANDMount::ListTitles(u32 category, std::vector<u32>& titlelist) noexcept
 {
     FRESULT res;
     FF_DIR titledir;
@@ -838,7 +904,7 @@ void NANDMount::ListTitles(u32 category, std::vector<u32>& titlelist)
     if (res != FR_OK)
     {
         Log(LogLevel::Warn, "NAND: !! no title dir (%s)\n", path);
-        return;
+        return false;
     }
 
     for (;;)
@@ -885,11 +951,11 @@ bool NANDMount::TitleExists(u32 category, u32 titleid)
     return (res == FR_OK);
 }
 
-void NANDMount::GetTitleInfo(u32 category, u32 titleid, u32& version, NDSHeader* header, NDSBanner* banner)
+bool NANDMount::GetTitleInfo(u32 category, u32 titleid, u32& version, NDSHeader* header, NDSBanner* banner) noexcept
 {
     version = GetTitleVersion(category, titleid);
     if (version == 0xFFFFFFFF)
-        return;
+        return false;
 
     FRESULT res;
 
@@ -898,7 +964,7 @@ void NANDMount::GetTitleInfo(u32 category, u32 titleid, u32& version, NDSHeader*
     FF_FIL file;
     res = f_open(&file, path, FA_OPEN_EXISTING | FA_READ);
     if (res != FR_OK)
-        return;
+        return false;
 
     u32 nread;
     f_read(&file, header, sizeof(NDSHeader), &nread);
@@ -946,7 +1012,7 @@ bool NANDMount::CreateTicket(const char* path, u32 titleid0, u32 titleid1, u8 ve
 
     memset(&ticket[0x222], 0xFF, 0x20);
 
-    ESEncrypt(ticket, 0x2A4);
+    Image->ESEncrypt(ticket, 0x2A4);
 
     f_write(&file, ticket, 0x2C4, &nwrite);
 
@@ -1199,7 +1265,7 @@ bool NANDMount::ImportTitle(const u8* app, size_t appLength, const DSi_TMD::Titl
     return true;
 }
 
-void NANDMount::DeleteTitle(u32 category, u32 titleid)
+bool NANDMount::DeleteTitle(u32 category, u32 titleid) noexcept
 {
     char fname[128];
 
@@ -1208,6 +1274,8 @@ void NANDMount::DeleteTitle(u32 category, u32 titleid)
 
     snprintf(fname, sizeof(fname), "0:/title/%08x/%08x", category, titleid);
     RemoveDir(fname);
+
+    return true;
 }
 
 u32 NANDMount::GetTitleDataMask(u32 category, u32 titleid)
