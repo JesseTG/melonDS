@@ -1278,4 +1278,12 @@ bool NANDMount::ExportTitleData(u32 category, u32 titleid, int type, const char*
     return ExportFile(fname, file);
 }
 
+void DSiFirmwareSystemSettings::UpdateHash() noexcept
+{
+    SHA1_CTX sha;
+    SHA1Init(&sha);
+    SHA1Update(&sha, &Bytes[0x88], sizeof(*this) - 0x88);
+    SHA1Final(Hash.data(), &sha);
+}
+
 }
