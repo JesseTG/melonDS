@@ -21,7 +21,8 @@
 
 DSi_SDIOHost::DSi_SDIOHost() : DSi_SDHost(1), NWifi(this)
 {
-
+    Ports[0] = &NWifi;
+    Ports[1] = nullptr;
 }
 
 
@@ -39,6 +40,7 @@ void DSi_SDIOHost::Reset() noexcept
     NWifi = DSi_NWifi(this);
 
     Ports[0] = &NWifi;
+    Ports[1] = nullptr;
 }
 
 u16 DSi_SDIOHost::ReadMMIO() noexcept
