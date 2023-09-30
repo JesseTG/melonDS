@@ -34,8 +34,8 @@ void DSi_SDMMCHost::DoSavestate(Savestate* file) noexcept
     DSi_SDHost::DoSavestate(file);
 
     NAND.DoSavestate(file);
-    if (SDCard && SDCard->GetSDCard())
-        SDCard->DoSavestate(file);
+    if (SDCard.GetSDCard())
+        SDCard.DoSavestate(file);
 }
 
 DSi_NAND::NANDMount DSi_SDMMCHost::MountNAND() noexcept
@@ -46,10 +46,10 @@ DSi_NAND::NANDMount DSi_SDMMCHost::MountNAND() noexcept
 u16 DSi_SDMMCHost::ReadMMIO() noexcept
 {
     u16 ret = (IRQStatus & 0x031D);
-    if (SDCard && SDCard->GetSDCard()) // basic check of whether the SD card is inserted
+    if (SDCard.GetSDCard()) // basic check of whether the SD card is inserted
     {
         ret |= 0x0020;
-        if (!SDCard->GetSDCard()->IsReadOnly())
+        if (!SDCard.GetSDCard()->IsReadOnly())
             ret |= 0x0080;
     }
 

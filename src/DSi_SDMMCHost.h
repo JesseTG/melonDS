@@ -35,12 +35,14 @@ public:
     [[nodiscard]] const std::unique_ptr<DSi_NAND::NANDImage>& GetNAND() const noexcept { return NAND.GetNAND(); }
     [[nodiscard]] std::unique_ptr<DSi_NAND::NANDImage>& GetNAND() noexcept { return NAND.GetNAND(); }
 
+    [[nodiscard]] const std::unique_ptr<FATStorage>& GetSDCard() const noexcept { return SDCard.GetSDCard(); }
+    [[nodiscard]] std::unique_ptr<FATStorage>& GetSDCard() noexcept { return SDCard.GetSDCard(); }
 
     [[nodiscard]] DSi_NAND::NANDMount MountNAND() noexcept;
 protected:
     u16 ReadMMIO() noexcept override;
 private:
-    std::optional<DSi_MMCSDCardStorage> SDCard;
+    DSi_MMCSDCardStorage SDCard;
     DSi_MMCNANDStorage NAND;
 };
 
