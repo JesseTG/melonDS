@@ -93,9 +93,7 @@ public:
     static std::unique_ptr<NANDImage> New(const std::string& nandpath, const AESKey& es_keyY) noexcept;
     static std::unique_ptr<NANDImage> New(Platform::FileHandle* nandfile, const AESKey& es_keyY) noexcept;
     NANDImage(const NANDImage&) = delete;
-    NANDImage(NANDImage&&) noexcept;
     NANDImage& operator=(const NANDImage&) = delete;
-    NANDImage& operator=(NANDImage&&) noexcept;
     ~NANDImage() noexcept;
 
     [[nodiscard]] u64 GetConsoleID() const noexcept { return ConsoleID; }
