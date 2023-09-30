@@ -509,7 +509,6 @@ u16 DSi_SDHost::ReadFIFO16()
         return 0;
     }
 
-    DSi_SDDevice* dev = Ports[PortSelect & 0x1];
     u16 ret = DataFIFO[f].Read();
 
     if (DataFIFO[f].IsEmpty())
@@ -530,7 +529,6 @@ u32 DSi_SDHost::ReadFIFO32()
         return 0;
     }
 
-    DSi_SDDevice* dev = Ports[PortSelect & 0x1];
     u32 ret = DataFIFO32.Read();
 
     if (DataFIFO32.IsEmpty())
@@ -666,7 +664,6 @@ void DSi_SDHost::Write(u32 addr, u16 val)
 
 void DSi_SDHost::WriteFIFO16(u16 val)
 {
-    DSi_SDDevice* dev = Ports[PortSelect & 0x1];
     u32 f = CurFIFO;
     if (DataFIFO[f].IsFull())
     {
@@ -735,6 +732,3 @@ void DSi_SDHost::CheckSwapFIFO()
         CurFIFO ^= 1;
     }
 }
-
-
-#define MMC_DESC  (Internal?"NAND":"SDcard")
