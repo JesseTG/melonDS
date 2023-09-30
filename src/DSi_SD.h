@@ -85,7 +85,10 @@ protected:
     u32 Param {};
     u16 ResponseBuffer[8] {};
 
-    [[deprecated("Use the subclasses instead")]] DSi_SDDevice* Ports[2]{};
+    // These no longer represent owned devices;
+    // they're pointers to the actual owned devices
+    // (which are declared in subclasses)
+    DSi_SDDevice* Ports[2]{};
 
     u32 CurFIFO {}; // FIFO accessible for read/write
     FIFO<u16, 0x100> DataFIFO[2];
