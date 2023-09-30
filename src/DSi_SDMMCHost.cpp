@@ -20,8 +20,11 @@
 #include "DSi_MMCStorage.h"
 #include "DSi.h"
 
-DSi_SDMMCHost::DSi_SDMMCHost() : DSi_SDHost(0), NAND(this)
+DSi_SDMMCHost::DSi_SDMMCHost() : DSi_SDHost(0), SDCard(this), NAND(this)
 {
+    Ports[0] = &SDCard;
+    Ports[1] = &NAND;
+    Reset();
 }
 
 void DSi_SDMMCHost::Reset() noexcept
