@@ -225,7 +225,7 @@ union DSiFirmwareSystemSettings
     };
     u8 Bytes[432];
 
-    void UpdateHash() noexcept;
+    void UpdateHash();
 };
 
 static_assert(sizeof(DSiFirmwareSystemSettings) == 432, "DSiFirmwareSystemSettings must be exactly 432 bytes");

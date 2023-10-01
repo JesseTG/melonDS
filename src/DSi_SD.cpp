@@ -99,50 +99,6 @@ void DSi_SDHost::Reset() noexcept
     StopAction = 0;
 
     TXReq = false;
-
-    if (Num == 0)
-    {
-        DSi_MMCStorage* sd;
-        DSi_MMCStorage* mmc;
-
-        if (Platform::GetConfigBool(Platform::DSiSD_Enable))
-        {
-            std::string folderpath;
-            if (Platform::GetConfigBool(Platform::DSiSD_FolderSync))
-                folderpath = Platform::GetConfigString(Platform::DSiSD_FolderPath);
-            else
-                folderpath = "";
-
-            sd = new DSi_MMCStorage(this,
-                                    false,
-                                    Platform::GetConfigString(Platform::DSiSD_ImagePath),
-                                    (u64)Platform::GetConfigInt(Platform::DSiSD_ImageSize) * 1024 * 1024,
-                                    Platform::GetConfigBool(Platform::DSiSD_ReadOnly),
-                                    folderpath);
-            u8 sd_cid[16] = {0xBD, 0x12, 0x34, 0x56, 0x78, 0x03, 0x4D, 0x30, 0x30, 0x46, 0x50, 0x41, 0x00, 0x00, 0x15, 0x00};
-            sd->SetCID(sd_cid);
-        }
-        else
-            sd = nullptr;
-
-        std::string nandpath = Platform::GetConfigString(Platform::DSi_NANDPath);
-        std::string instnand = nandpath + Platform::InstanceFileSuffix();
-
-        mmc = new DSi_MMCStorage(this, true, instnand);
-        mmc->SetCID(DSi::eMMC_CID.data());
-
-        Ports[0] = sd;
-        Ports[1] = mmc;
-    }
-    else
-    {
-        DSi_NWifi* nwifi = new DSi_NWifi(this);
-
-        Ports[0] = nwifi;
-    }
-
-    if (Ports[0]) Ports[0]->Reset();
-    if (Ports[1]) Ports[1]->Reset();
 }
 
 void DSi_SDHost::DoSavestate(Savestate* file) noexcept

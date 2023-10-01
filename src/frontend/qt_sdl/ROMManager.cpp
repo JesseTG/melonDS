@@ -41,6 +41,7 @@
 #include "SPI.h"
 #include "DSi_I2C.h"
 #include "FreeBIOS.h"
+#include "DSi_SDMMCHost.h"
 
 using std::make_unique;
 using std::pair;
@@ -74,6 +75,7 @@ ARCodeFile* CheatFile = nullptr;
 bool CheatsOn = false;
 
 bool InstallNAND();
+bool InstallDSiSDCard();
 
 int LastSep(const std::string& path)
 {
@@ -599,6 +601,7 @@ void Reset()
     if (Config::ConsoleType == 1)
     {
         InstallNAND();
+        InstallDSiSDCard();
     }
     NDS::Reset();
     SetBatteryLevels();
@@ -662,8 +665,8 @@ bool LoadBIOS()
     if (!InstallFirmware())
         return false;
 
-    if (Config::ConsoleType == 1 && !InstallNAND())
-    { // If we're emulating a DSi and we couldn't install the NAND...
+    if (Config::ConsoleType == 1 && !InstallNAND() && !InstallDSiSDCard())
+    { // If we're emulating a DSi, but we failed to install the NAND or SD card (if applicable)...
         return false;
     }
 
@@ -814,44 +817,6 @@ pair<unique_ptr<SPI_Firmware::Firmware>, string> LoadFirmwareFromFile()
     return std::make_pair(std::move(firmware), loadedpath);
 }
 
-/// @warning: BIOS must be loaded and installed before calling this function!
-unique_ptr<DSi_NAND::NANDMount> LoadNANDFromFile()
-{
-    string nandpath = Config::DSiNANDPath;
-
-    Log(LogLevel::Debug, "DSi NAND: loading from file %s\n", nandpath.c_str());
-
-    string nandinstancepath = nandpath + Platform::InstanceFileSuffix();
-
-    string loadedpath = nandinstancepath;
-    FileHandle* f = Platform::OpenLocalFile(nandinstancepath, FileMode::ReadWriteExisting);
-    if (!f)
-    {
-        loadedpath = nandpath;
-        f = Platform::OpenLocalFile(nandpath, FileMode::ReadWriteExisting);
-    }
-
-    // TODO: Remove the existing NAND first (it might be the same file)
-
-    if (f)
-    {
-        auto key = reinterpret_cast<const DSi_NAND::AESKey*>(&DSi::ARM7iBIOS[0x8308]);
-        unique_ptr<DSi_NAND::NANDMount> nand = DSi_NAND::NANDMount::New(f, *key);
-        if (!nand)
-        {
-            Log(LogLevel::Error, "Couldn't read NAND file!\n");
-
-            // The NAND object takes ownership of the file handle,
-            // so it will be cleaned up
-            // (even if the NAND object doesn't live past New())
-        }
-
-        return nand;
-    }
-
-    return nullptr;
-}
-
 pair<unique_ptr<SPI_Firmware::Firmware>, string> GenerateDefaultFirmware()
 {
     using namespace SPI_Firmware;
@@ -916,7 +881,7 @@ void LoadUserSettingsFromConfig(SPI_Firmware::Firmware& firmware)
     UserData& currentData = firmware.EffectiveUserData();
 
     // setting up username
-    std::string orig_username = Platform::GetConfigString(Platform::Firm_Username);
+    std::string orig_username = Config::FirmwareUsername;
     if (!orig_username.empty())
     { // If the frontend defines a username, take it. If not, leave the existing one.
         std::u16string username = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(orig_username);
@@ -925,7 +890,7 @@ void LoadUserSettingsFromConfig(SPI_Firmware::Firmware& firmware)
         memcpy(currentData.Nickname, username.data(), usernameLength * sizeof(char16_t));
     }
 
-    auto language = static_cast<Language>(Platform::GetConfigInt(Platform::Firm_Language));
+    auto language = static_cast<Language>(Config::FirmwareLanguage);
     if (language != Language::Reserved)
     { // If the frontend specifies a language (rather than using the existing value)...
         currentData.Settings &= ~Language::Reserved; // ..clear the existing language...
@@ -933,26 +898,26 @@ void LoadUserSettingsFromConfig(SPI_Firmware::Firmware& firmware)
     }
 
     // setting up color
-    u8 favoritecolor = Platform::GetConfigInt(Platform::Firm_Color);
+    u8 favoritecolor = Config::FirmwareFavouriteColour;
     if (favoritecolor != 0xFF)
     {
         currentData.FavoriteColor = favoritecolor;
     }
 
-    u8 birthmonth = Platform::GetConfigInt(Platform::Firm_BirthdayMonth);
+    u8 birthmonth = Config::FirmwareBirthdayMonth;
     if (birthmonth != 0)
     { // If the frontend specifies a birth month (rather than using the existing value)...
         currentData.BirthdayMonth = birthmonth;
     }
 
-    u8 birthday = Platform::GetConfigInt(Platform::Firm_BirthdayDay);
+    u8 birthday = Config::FirmwareBirthdayDay;
     if (birthday != 0)
     { // If the frontend specifies a birthday (rather than using the existing value)...
         currentData.BirthdayDay = birthday;
     }
 
     // setup message
-    std::string orig_message = Platform::GetConfigString(Platform::Firm_Message);
+    std::string orig_message = Config::FirmwareMessage;
     if (!orig_message.empty())
     {
         std::u16string message = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(orig_message);
@@ -1032,17 +997,132 @@ bool InstallFirmware()
     return InstallFirmware(std::move(firmware));
 }
 
+/// @warning: BIOS must be loaded and installed before calling this function!
 bool InstallNAND()
 {
-    unique_ptr<DSi_NAND::NANDMount> nand = LoadNANDFromFile();
+    if (!DSi::SDMMC)
+    {
+        Log(LogLevel::Error, "SD/MMC device not initialized! Did you forget to call Init()?\n");
+        return false;
+    }
 
-    if (!nand)
+    // We close the existing NAND image (if any)
+    // in case the OS gives us a hard time about maintaining multiple handles
+    // to the same open file.
+    DSi::SDMMC->GetNAND() = nullptr;
+    string nandpath = Config::DSiNANDPath;
+
+    Log(LogLevel::Debug, "DSi NAND: loading from file %s\n", nandpath.c_str());
+
+    string nandinstancepath = nandpath + Platform::InstanceFileSuffix();
+
+    string loadedpath = nandinstancepath;
+    FileHandle* f = Platform::OpenLocalFile(nandinstancepath, FileMode::ReadWriteExisting);
+    if (!f)
+    {
+        loadedpath = nandpath;
+        f = Platform::OpenLocalFile(nandpath, FileMode::ReadWriteExisting);
+    }
+
+    if (f)
+    {
+        const auto& key = *reinterpret_cast<const DSi_NAND::AESKey*>(&DSi::ARM7iBIOS[0x8308]);
+        DSi::SDMMC->GetNAND() = DSi_NAND::NANDImage::New(f, key);
+        if (!DSi::SDMMC->GetNAND())
+        {
+            Log(LogLevel::Error, "Couldn't read NAND file!\n");
+
+            // The NAND object takes ownership of the file handle,
+            // so it will be cleaned up
+            // (even if the NAND object doesn't live past New())
+        }
+    }
+
+    if (!DSi::SDMMC->GetNAND())
     {
         Log(LogLevel::Error, "NAND couldn't be loaded!.\n");
         return false;
     }
 
-    DSi::NAND = std::move(nand);
+    if (DSi_NAND::NANDMount nand = DSi::SDMMC->MountNAND())
+    {
+        DSi_NAND::DSiFirmwareSystemSettings userdata {};
+        if (!nand.ReadUserData(userdata))
+        {
+            return false;
+        }
+
+        // override user settings, if needed
+        if (Config::FirmwareOverrideSettings)
+        {
+            // setting up username
+            std::u16string username = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(Config::FirmwareUsername);
+            size_t usernameLength = std::min(username.length(), (size_t) 10);
+            memset(userdata.Nickname, 0, sizeof(userdata.Nickname));
+            memcpy(userdata.Nickname, username.data(), usernameLength * sizeof(char16_t));
+
+            // setting language
+            userdata.Language = static_cast<SPI_Firmware::Language>(Config::FirmwareLanguage);
+
+            // setting up color
+            userdata.FavoriteColor = (u8)Config::FirmwareFavouriteColour;
+
+            // setting up birthday
+            userdata.BirthdayMonth = (u8)Config::FirmwareBirthdayMonth;
+            userdata.BirthdayDay = (u8)Config::FirmwareBirthdayDay;
+
+            // setup message
+            std::u16string message = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(Config::FirmwareMessage);
+            size_t messageLength = std::min(message.length(), (size_t) 26);
+            memset(userdata.Message, 0, sizeof(userdata.Message));
+            memcpy(userdata.Message, message.data(), messageLength * sizeof(char16_t));
+        }
+
+        // fix touchscreen coords
+        userdata.TouchCalibrationADC1[0] = 0;
+        userdata.TouchCalibrationADC1[1] = 0;
+        userdata.TouchCalibrationPixel1[0] = 0;
+        userdata.TouchCalibrationPixel1[1] = 0;
+        userdata.TouchCalibrationADC2[0] = 255 << 4;
+        userdata.TouchCalibrationADC2[1] = 191 << 4;
+        userdata.TouchCalibrationPixel2[0] = 255;
+        userdata.TouchCalibrationPixel2[1] = 191;
+
+        userdata.UpdateHash();
+
+        nand.PatchUserData(userdata);
+    }
+
+    return true;
+}
+
+bool InstallDSiSDCard()
+{
+    if (!DSi::SDMMC)
+    {
+        Log(LogLevel::Error, "SD/MMC device not initialized! Did you forget to call Init()?\n");
+        return false;
+    }
+
+    if (!Config::DSiSDEnable)
+    {
+        DSi::SDMMC->GetSDCard() = nullptr;
+        Log(LogLevel::Info, "Not using an SD card in the DSi\n");
+        return true;
+    }
+
+    std::string folderpath;
+    if (Config::DSiSDFolderSync)
+        folderpath = Config::DSiSDFolderPath;
+    else
+        folderpath = "";
+
+    DSi::SDMMC->GetSDCard() = std::make_unique<FATStorage>(
+        folderpath,
+        Platform::GetConfigInt(Platform::DSiSD_ImageSize),
+        Config::DSiSDReadOnly,
+        folderpath
+    );
 
     return true;
 }
@@ -1147,7 +1227,7 @@ bool LoadROM(QStringList filepath, bool reset)
     {
         return false;
     }
-    if (Config::ConsoleType == 1 && !InstallNAND())
+    if (Config::ConsoleType == 1 && !InstallNAND() && !InstallDSiSDCard())
     {
         return false;
     }

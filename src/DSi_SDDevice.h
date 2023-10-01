@@ -31,7 +31,7 @@ class DSi_SDDevice
 {
 public:
     DSi_SDDevice() noexcept : IRQ(false) {}
-    virtual ~DSi_SDDevice() noexcept = 0;
+    virtual ~DSi_SDDevice() noexcept = default;
 
     virtual void Reset() noexcept = 0;
 

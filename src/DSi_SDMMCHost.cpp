@@ -20,6 +20,8 @@
 #include "DSi_MMCStorage.h"
 #include "DSi.h"
 
+constexpr std::array<u8, 16> sd_cid = {0xBD, 0x12, 0x34, 0x56, 0x78, 0x03, 0x4D, 0x30, 0x30, 0x46, 0x50, 0x41, 0x00, 0x00, 0x15, 0x00};
+
 DSi_SDMMCHost::DSi_SDMMCHost() : DSi_SDHost(0), SDCard(this), NAND(this)
 {
     Ports[0] = &SDCard;
@@ -30,6 +32,16 @@ DSi_SDMMCHost::DSi_SDMMCHost() : DSi_SDHost(0), SDCard(this), NAND(this)
 void DSi_SDMMCHost::Reset() noexcept
 {
     DSi_SDHost::Reset();
+
+    std::unique_ptr<FATStorage> sd = std::move(SDCard.GetSDCard());
+    this->SDCard = DSi_MMCSDCardStorage(this, std::move(sd));
+    this->SDCard.SetCID(sd_cid.data());
+    Ports[0] = SDCard.GetSDCard() ? &SDCard : nullptr;
+
+    std::unique_ptr<DSi_NAND::NANDImage> nand = std::move(NAND.GetNAND());
+    this->NAND = DSi_MMCNANDStorage(this, std::move(nand));
+    this->NAND.SetCID(DSi::eMMC_CID.data());
+    Ports[1] = &NAND;
 }
 
 void DSi_SDMMCHost::DoSavestate(Savestate* file) noexcept

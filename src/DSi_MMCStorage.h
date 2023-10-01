@@ -29,7 +29,7 @@ class DSi_SDMMCHost;
 class DSi_MMCStorage : public DSi_SDDevice
 {
 public:
-    ~DSi_MMCStorage() noexcept override = 0;
+    ~DSi_MMCStorage() noexcept override = default;
 
     void Reset() noexcept final;
 

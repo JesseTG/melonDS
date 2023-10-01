@@ -107,8 +107,6 @@ enum ConfigEntry
 
     ExternalBIOSEnable,
 
-    DSi_NANDPath [[deprecated("No longer needed by the core")]],
-
     DLDI_Enable,
     DLDI_ImagePath,
     DLDI_ImageSize,
@@ -116,20 +114,7 @@ enum ConfigEntry
     DLDI_FolderSync,
     DLDI_FolderPath,
 
-    DSiSD_Enable,
-    DSiSD_ImagePath,
     DSiSD_ImageSize,
-    DSiSD_ReadOnly,
-    DSiSD_FolderSync,
-    DSiSD_FolderPath,
-
-    Firm_OverrideSettings [[deprecated("Individual fields can now be overridden")]],
-    Firm_Username,
-    Firm_Language,
-    Firm_BirthdayMonth,
-    Firm_BirthdayDay,
-    Firm_Color,
-    Firm_Message,
     Firm_MAC,
 
     WifiSettingsPath,

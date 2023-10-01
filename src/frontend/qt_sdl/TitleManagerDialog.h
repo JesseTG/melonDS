@@ -51,7 +51,7 @@ public:
     explicit TitleManagerDialog(QWidget* parent);
     ~TitleManagerDialog();
 
-    static std::unique_ptr<DSi_NAND::NANDMount> nand;
+    static std::unique_ptr<DSi_NAND::NANDImage> nand;
     static bool openNAND();
     static void closeNAND();
 
@@ -110,7 +110,7 @@ class TitleImportDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit TitleImportDialog(QWidget* parent, QString& apppath, const DSi_TMD::TitleMetadata* tmd, bool& readonly, std::unique_ptr<DSi_NAND::NANDMount>& nand);
+    explicit TitleImportDialog(QWidget* parent, QString& apppath, const DSi_TMD::TitleMetadata* tmd, bool& readonly, std::unique_ptr<DSi_NAND::NANDImage>& nand);
     ~TitleImportDialog();
 
 private slots:
@@ -132,7 +132,7 @@ private:
     QString& appPath;
     const DSi_TMD::TitleMetadata* tmdData;
     bool& readOnly;
-    std::unique_ptr<DSi_NAND::NANDMount>& nand;
+    std::unique_ptr<DSi_NAND::NANDImage>& nand;
 
     u32 titleid[2];
 };

@@ -585,73 +585,31 @@ bool NANDMount::ReadUserData(DSiFirmwareSystemSettings& data) noexcept
 
 bool NANDMount::PatchUserData(const DSiFirmwareSystemSettings& data) noexcept
 {
-    FRESULT res;
-
     for (int i = 0; i < 2; i++)
     {
         char filename[64];
         snprintf(filename, sizeof(filename), "0:/shared1/TWLCFG%d.dat", i);
 
         FF_FIL file;
-        res = f_open(&file, filename, FA_OPEN_EXISTING | FA_READ | FA_WRITE);
-        if (res != FR_OK)
+        if (FRESULT res = f_open(&file, filename, FA_OPEN_EXISTING | FA_READ | FA_WRITE); res != FR_OK)
         {
-            Log(LogLevel::Error, "NAND: editing file %s failed: %d\n", filename, res);
+            Log(LogLevel::Error, "NAND: editing file %s failed: %s\n", filename, FResultToString(res));
             continue;
         }
 
-        u8 contents[0x1B0];
+        DSiFirmwareSystemSettings contents = data;
         u32 nres;
-        f_lseek(&file, 0);
-        f_read(&file, contents, 0x1B0, &nres);
-
-        // override user settings, if needed
-        if (Platform::GetConfigBool(Platform::Firm_OverrideSettings))
+        if (FRESULT res = f_lseek(&file, 0); res != FR_OK)
         {
-            // setting up username
-            std::string orig_username = Platform::GetConfigString(Platform::Firm_Username);
-            std::u16string username = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(orig_username);
-            size_t usernameLength = std::min(username.length(), (size_t) 10);
-            memset(contents + 0xD0, 0, 11 * sizeof(char16_t));
-            memcpy(contents + 0xD0, username.data(), usernameLength * sizeof(char16_t));
-
-            // setting language
-            contents[0x8E] = Platform::GetConfigInt(Platform::Firm_Language);
-
-            // setting up color
-            contents[0xCC] = Platform::GetConfigInt(Platform::Firm_Color);
-
-            // setting up birthday
-            contents[0xCE] = Platform::GetConfigInt(Platform::Firm_BirthdayMonth);
-            contents[0xCF] = Platform::GetConfigInt(Platform::Firm_BirthdayDay);
-
-            // setup message
-            std::string orig_message = Platform::GetConfigString(Platform::Firm_Message);
-            std::u16string message = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(orig_message);
-            size_t messageLength = std::min(message.length(), (size_t) 26);
-            memset(contents + 0xE6, 0, 27 * sizeof(char16_t));
-            memcpy(contents + 0xE6, message.data(), messageLength * sizeof(char16_t));
-
-            // TODO: make other items configurable?
+            Log(LogLevel::Error, "NAND: f_lseek to start in %s failed: %s\n", filename, FResultToString(res));
+            f_close(&file);
+            continue;
         }
 
-        // fix touchscreen coords
-        *(u16*)&contents[0xB8] = 0;
-        *(u16*)&contents[0xBA] = 0;
-        contents[0xBC] = 0;
-        contents[0xBD] = 0;
-        *(u16*)&contents[0xBE] = 255<<4;
-        *(u16*)&contents[0xC0] = 191<<4;
-        contents[0xC2] = 255;
-        contents[0xC3] = 191;
-
-        SHA1_CTX sha;
-        SHA1Init(&sha);
-        SHA1Update(&sha, &contents[0x88], 0x128);
-        SHA1Final(&contents[0], &sha);
-
+        // TODO: Handle error cases here
+        f_read(&file, &contents, sizeof(DSiFirmwareSystemSettings), &nres);
         f_lseek(&file, 0);
-        f_write(&file, contents, 0x1B0, &nres);
+        f_write(&file, &contents, sizeof(DSiFirmwareSystemSettings), &nres);
 
         f_close(&file);
     }
@@ -1354,7 +1312,7 @@ bool NANDMount::ExportTitleData(u32 category, u32 titleid, int type, const char*
     return ExportFile(fname, file);
 }
 
-void DSiFirmwareSystemSettings::UpdateHash() noexcept
+void DSiFirmwareSystemSettings::UpdateHash()
 {
     SHA1_CTX sha;
     SHA1Init(&sha);
