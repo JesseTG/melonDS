@@ -24,7 +24,6 @@ using namespace Platform;
 
 DSi_MMCStorage::DSi_MMCStorage(DSi_SDMMCHost* host, bool internal) : DSi_SDDevice(), Host(host), Internal(internal)
 {
-    Reset();
 }
 
 void DSi_MMCStorage::Reset() noexcept

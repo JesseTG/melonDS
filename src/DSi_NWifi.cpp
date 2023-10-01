@@ -140,8 +140,6 @@ DSi_NWifi::DSi_NWifi(DSi_SDIOHost* host) noexcept
     EEPROMReady = 0;
 
     Ctx = this;
-
-    Reset();
 }
 
 DSi_NWifi::~DSi_NWifi()
