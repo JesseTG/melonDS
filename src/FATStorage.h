@@ -36,7 +36,7 @@ public:
     ~FATStorage();
 
     bool Open();
-    void Close();
+    [[deprecated("Close the file in the destructor instead")]] void Close();
 
     bool InjectFile(const std::string& path, u8* data, u32 len);
 
@@ -52,8 +52,8 @@ private:
     Platform::FileHandle* File;
     u64 FileSize;
 
-    static Platform::FileHandle* FF_File;
-    static u64 FF_FileSize;
+    [[deprecated]] static Platform::FileHandle* FF_File;
+    [[deprecated]] static u64 FF_FileSize;
     static UINT FF_ReadStorage(BYTE* buf, LBA_t sector, UINT num);
     static UINT FF_WriteStorage(const BYTE* buf, LBA_t sector, UINT num);
 
@@ -76,7 +76,7 @@ private:
     u64 GetDirectorySize(std::filesystem::path sourcedir);
 
     bool Load(const std::string& filename, u64 size, const std::string& sourcedir);
-    bool Save();
+    [[deprecated("Close the file in the destructor instead")]] bool Save();
 
     typedef struct
     {
