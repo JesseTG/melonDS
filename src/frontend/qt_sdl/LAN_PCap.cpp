@@ -89,7 +89,7 @@ int NumAdapters = 0;
 
 Platform::DynamicLibrary* PCapLib = NULL;
 pcap_t* PCapAdapter = NULL;
-AdapterData* PCapAdapterData;
+AdapterData* PCapAdapterData = NULL;
 
 u8 PacketBuffer[2048];
 int PacketLen;
@@ -357,6 +357,19 @@ void DeInit()
         Platform::DynamicLibrary_Unload(PCapLib);
         PCapLib = NULL;
     }
+
+    ptr_pcap_findalldevs = NULL;
+    ptr_pcap_freealldevs = NULL;
+    ptr_pcap_open_live = NULL;
+    ptr_pcap_close = NULL;
+    ptr_pcap_setnonblock = NULL;
+    ptr_pcap_sendpacket = NULL;
+    ptr_pcap_dispatch = NULL;
+    ptr_pcap_next = NULL;
+    PCapAdapterData = NULL;
+    delete[] Adapters;
+    Adapters = NULL;
+    NumAdapters = 0;
 }
 
 
