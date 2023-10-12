@@ -779,7 +779,6 @@ DSi_MMCStorage::DSi_MMCStorage(DSi_SDHost* host, bool internal, const std::strin
     NAND = nullptr;
 
     SD = new FATStorage(filename, size, readonly, sourcedir);
-    SD->Open();
 
     ReadOnly = readonly;
 }

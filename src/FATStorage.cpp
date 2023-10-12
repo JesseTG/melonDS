@@ -33,7 +33,7 @@ FATStorage::FATStorage(const std::string& filename, u64 size, bool readonly, con
     ReadOnly = readonly;
     Load(filename, size, sourcedir);
 
-    File = nullptr;
+    File = Platform::OpenLocalFile(FilePath, FileMode::ReadWriteExisting);
 }
 
 FATStorage::~FATStorage()
@@ -41,17 +41,6 @@ FATStorage::~FATStorage()
     if (!ReadOnly) Save();
 }
 
-
-bool FATStorage::Open()
-{
-    File = Platform::OpenLocalFile(FilePath, FileMode::ReadWriteExisting);
-    if (!File)
-    {
-        return false;
-    }
-
-    return true;
-}
 
 void FATStorage::Close()
 {
