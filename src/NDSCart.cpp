@@ -1191,7 +1191,6 @@ CartHomebrew::~CartHomebrew()
 {
     if (SD)
     {
-        SD->Close();
         delete SD;
     }
 }
@@ -1204,7 +1203,6 @@ void CartHomebrew::Reset()
 
     if (SD)
     {
-        SD->Close();
         delete SD;
     }
 

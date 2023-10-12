@@ -787,7 +787,6 @@ DSi_MMCStorage::~DSi_MMCStorage()
 {
     if (SD)
     {
-        SD->Close();
         delete SD;
     }
 

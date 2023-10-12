@@ -35,8 +35,6 @@ public:
     FATStorage(const std::string& filename, u64 size, bool readonly, const std::string& sourcedir);
     ~FATStorage();
 
-    [[deprecated("Close the file in the destructor instead")]] void Close();
-
     bool InjectFile(const std::string& path, u8* data, u32 len);
 
     u32 ReadSectors(u32 start, u32 num, u8* data);

@@ -38,14 +38,10 @@ FATStorage::FATStorage(const std::string& filename, u64 size, bool readonly, con
 
 FATStorage::~FATStorage()
 {
-    if (!ReadOnly) Save();
-}
-
-
-void FATStorage::Close()
-{
     if (File) CloseFile(File);
     File = nullptr;
+
+    if (!ReadOnly) Save();
 }
 
 
