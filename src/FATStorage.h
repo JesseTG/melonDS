@@ -42,6 +42,7 @@ public:
     u32 ReadSectors(u32 start, u32 num, u8* data);
     u32 WriteSectors(u32 start, u32 num, u8* data);
 
+    [[nodiscard]] explicit operator bool() const noexcept { return File != nullptr; }
 private:
     std::string FilePath;
     std::string IndexPath;
