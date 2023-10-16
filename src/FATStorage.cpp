@@ -45,7 +45,7 @@ FATStorage::~FATStorage()
 }
 
 
-bool FATStorage::InjectFile(const std::string& path, u8* data, u32 len)
+bool FATStorage::InjectFile(const std::string& path, const u8* data, u32 len)
 {
     if (!File) return false;
     if (FF_File) return false;
@@ -93,7 +93,7 @@ u32 FATStorage::ReadSectors(u32 start, u32 num, u8* data)
     return ReadSectorsInternal(File, FileSize, start, num, data);
 }
 
-u32 FATStorage::WriteSectors(u32 start, u32 num, u8* data)
+u32 FATStorage::WriteSectors(u32 start, u32 num, const u8* data)
 {
     if (ReadOnly) return 0;
     return WriteSectorsInternal(File, FileSize, start, num, data);
