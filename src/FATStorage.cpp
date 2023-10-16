@@ -32,8 +32,6 @@ FATStorage::FATStorage(const std::string& filename, u64 size, bool readonly, con
 {
     ReadOnly = readonly;
     Load(filename, size, sourcedir);
-
-    File = Platform::OpenLocalFile(FilePath, FileMode::ReadWriteExisting);
 }
 
 FATStorage::~FATStorage()
@@ -48,11 +46,16 @@ FATStorage::~FATStorage()
 bool FATStorage::InjectFile(const std::string& path, const u8* data, u32 len)
 {
     if (!File) return false;
-    if (FF_File) return false;
 
-    FF_File = File;
-    FF_FileSize = FileSize;
-    ff_disk_open(FF_ReadStorage, FF_WriteStorage, (LBA_t)(FileSize>>9));
+    ff_disk_open(
+        [this](BYTE* buf, LBA_t sector, UINT num) {
+            return this->ReadSectors(sector, num, buf);
+        },
+        [this](const BYTE* buf, LBA_t sector, UINT num) {
+            return this->WriteSectors(sector, num, buf);
+        },
+        (LBA_t)(FileSize>>9)
+    );
 
     FRESULT res;
     FATFS fs;
@@ -61,7 +64,6 @@ bool FATStorage::InjectFile(const std::string& path, const u8* data, u32 len)
     if (res != FR_OK)
     {
         ff_disk_close();
-        FF_File = nullptr;
         return false;
     }
 
@@ -73,7 +75,6 @@ bool FATStorage::InjectFile(const std::string& path, const u8* data, u32 len)
     {
         f_unmount("0:");
         ff_disk_close();
-        FF_File = nullptr;
         return false;
     }
 
@@ -83,7 +84,6 @@ bool FATStorage::InjectFile(const std::string& path, const u8* data, u32 len)
 
     f_unmount("0:");
     ff_disk_close();
-    FF_File = nullptr;
     return nwrite==len;
 }
 
@@ -97,20 +97,6 @@ u32 FATStorage::WriteSectors(u32 start, u32 num, const u8* data)
 {
     if (ReadOnly) return 0;
     return WriteSectorsInternal(File, FileSize, start, num, data);
-}
-
-
-FileHandle* FATStorage::FF_File;
-u64 FATStorage::FF_FileSize;
-
-UINT FATStorage::FF_ReadStorage(BYTE* buf, LBA_t sector, UINT num)
-{
-    return ReadSectorsInternal(FF_File, FF_FileSize, sector, num, buf);
-}
-
-UINT FATStorage::FF_WriteStorage(const BYTE* buf, LBA_t sector, UINT num)
-{
-    return WriteSectorsInternal(FF_File, FF_FileSize, sector, num, buf);
 }
 
 
@@ -936,8 +922,8 @@ bool FATStorage::Load(const std::string& filename, u64 size, const std::string& 
     //   with a minimum 128MB extra, otherwise size is defaulted to 512MB
 
     bool isnew = !Platform::LocalFileExists(filename);
-    FF_File = Platform::OpenLocalFile(filename, static_cast<FileMode>(FileMode::ReadWrite | FileMode::Preserve));
-    if (!FF_File)
+    File = Platform::OpenLocalFile(filename, static_cast<FileMode>(FileMode::ReadWrite | FileMode::Preserve));
+    if (!File)
         return false;
 
     IndexPath = FilePath + ".idx";
@@ -953,7 +939,7 @@ bool FATStorage::Load(const std::string& filename, u64 size, const std::string& 
 
         if (FileSize == 0)
         {
-            FileSize = FileLength(FF_File);
+            FileSize = FileLength(File);
         }
     }
 
@@ -967,8 +953,15 @@ bool FATStorage::Load(const std::string& filename, u64 size, const std::string& 
     }
     else
     {
-        FF_FileSize = FileSize;
-        ff_disk_open(FF_ReadStorage, FF_WriteStorage, (LBA_t)(FF_FileSize>>9));
+        ff_disk_open(
+            [this](BYTE* buf, LBA_t sector, UINT num) {
+                return this->ReadSectors(sector, num, buf);
+            },
+            [this](const BYTE* buf, LBA_t sector, UINT num) {
+                return this->WriteSectors(sector, num, buf);
+            },
+            (LBA_t)(FileSize>>9)
+        );
 
         res = f_mount(&fs, "0:", 1);
         if (res != FR_OK)
@@ -1004,9 +997,16 @@ bool FATStorage::Load(const std::string& filename, u64 size, const std::string& 
                 FileSize = 0x20000000ULL; // 512MB
         }
 
-        FF_FileSize = FileSize;
         ff_disk_close();
-        ff_disk_open(FF_ReadStorage, FF_WriteStorage, (LBA_t)(FF_FileSize>>9));
+        ff_disk_open(
+            [this](BYTE* buf, LBA_t sector, UINT num) {
+                return this->ReadSectors(sector, num, buf);
+            },
+            [this](const BYTE* buf, LBA_t sector, UINT num) {
+                return this->WriteSectors(sector, num, buf);
+            },
+            (LBA_t)(FileSize>>9)
+        );
 
         DirIndex.clear();
         FileIndex.clear();
@@ -1043,8 +1043,7 @@ bool FATStorage::Load(const std::string& filename, u64 size, const std::string& 
     f_unmount("0:");
 
     ff_disk_close();
-    CloseFile(FF_File);
-    FF_File = nullptr;
+    // Hang on to File, we'll continue to use it
 
     return true;
 }
@@ -1056,14 +1055,22 @@ bool FATStorage::Save()
         return true;
     }
 
-    FF_File = Platform::OpenLocalFile(FilePath, FileMode::ReadWriteExisting);
+    Platform::FileHandle* FF_File = Platform::OpenLocalFile(FilePath, FileMode::ReadWriteExisting);
     if (!FF_File)
     {
         return false;
     }
 
-    FF_FileSize = FileSize;
-    ff_disk_open(FF_ReadStorage, FF_WriteStorage, (LBA_t)(FileSize>>9));
+    size_t FF_FileSize = FileSize;
+    ff_disk_open(
+        [this](BYTE* buf, LBA_t sector, UINT num) {
+            return this->ReadSectors(sector, num, buf);
+        },
+        [this](const BYTE* buf, LBA_t sector, UINT num) {
+            return this->WriteSectors(sector, num, buf);
+        },
+        (LBA_t)(FileSize>>9)
+    );
 
     FRESULT res;
     FATFS fs;
