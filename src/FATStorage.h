@@ -50,9 +50,6 @@ private:
     Platform::FileHandle* File;
     u64 FileSize;
 
-    [[deprecated("Use ReadSectors instead")]] static u32 ReadSectorsInternal(Platform::FileHandle* file, u64 filelen, u32 start, u32 num, u8* data);
-    [[deprecated("Use WriteSectors instead")]] static u32 WriteSectorsInternal(Platform::FileHandle* file, u64 filelen, u32 start, u32 num, const u8* data);
-
     void LoadIndex();
     void SaveIndex();
 

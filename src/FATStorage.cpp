@@ -90,36 +90,24 @@ bool FATStorage::InjectFile(const std::string& path, const u8* data, u32 len)
 
 u32 FATStorage::ReadSectors(u32 start, u32 num, u8* data)
 {
-    return ReadSectorsInternal(File, FileSize, start, num, data);
-}
-
-u32 FATStorage::WriteSectors(u32 start, u32 num, const u8* data)
-{
-    if (ReadOnly) return 0;
-    return WriteSectorsInternal(File, FileSize, start, num, data);
-}
-
-
-u32 FATStorage::ReadSectorsInternal(FileHandle* file, u64 filelen, u32 start, u32 num, u8* data)
-{
-    if (!file) return 0;
+    if (!File) return 0;
 
     u64 addr = start * 0x200ULL;
     u32 len = num * 0x200;
 
-    if ((addr+len) > filelen)
+    if ((addr+len) > FileSize)
     {
-        if (addr >= filelen) return 0;
-        len = filelen - addr;
+        if (addr >= FileSize) return 0;
+        len = FileSize - addr;
         num = len >> 9;
     }
 
-    FileSeek(file, addr, FileSeekOrigin::Start);
+    FileSeek(File, addr, FileSeekOrigin::Start);
 
-    u32 res = FileRead(data, 0x200, num, file);
+    u32 res = FileRead(data, 0x200, num, File);
     if (res < num)
     {
-        if (IsEndOfFile(file))
+        if (IsEndOfFile(File))
         {
             memset(&data[0x200*res], 0, 0x200*(num-res));
             return num;
@@ -129,23 +117,24 @@ u32 FATStorage::ReadSectorsInternal(FileHandle* file, u64 filelen, u32 start, u3
     return res;
 }
 
-u32 FATStorage::WriteSectorsInternal(FileHandle* file, u64 filelen, u32 start, u32 num, const u8* data)
+u32 FATStorage::WriteSectors(u32 start, u32 num, const u8* data)
 {
-    if (!file) return 0;
+    if (ReadOnly) return 0;
+    if (!File) return 0;
 
     u64 addr = start * 0x200ULL;
     u32 len = num * 0x200;
 
-    if ((addr+len) > filelen)
+    if ((addr+len) > FileSize)
     {
-        if (addr >= filelen) return 0;
-        len = filelen - addr;
+        if (addr >= FileSize) return 0;
+        len = FileSize - addr;
         num = len >> 9;
     }
 
-    FileSeek(file, addr, FileSeekOrigin::Start);
+    FileSeek(File, addr, FileSeekOrigin::Start);
 
-    u32 res = Platform::FileWrite(data, 0x200, num, file);
+    u32 res = Platform::FileWrite(data, 0x200, num, File);
     return res;
 }
 
