@@ -65,8 +65,6 @@ void SoftRenderer::SetupRenderThread()
         Platform::Semaphore_Reset(Sema_RenderDone);
         Platform::Semaphore_Reset(Sema_RenderStart);
         Platform::Semaphore_Reset(Sema_ScanlineCount);
-
-        Platform::Semaphore_Post(Sema_RenderStart);
     }
     else
     {
@@ -74,6 +72,13 @@ void SoftRenderer::SetupRenderThread()
     }
 }
 
+void SoftRenderer::EnableRenderThread()
+{
+    if (Threaded && Sema_RenderStart)
+    {
+        Platform::Semaphore_Post(Sema_RenderStart);
+    }
+}
 
 SoftRenderer::SoftRenderer() noexcept
     : Renderer3D(false)
@@ -107,6 +112,7 @@ void SoftRenderer::Reset()
     PrevIsShadowMask = false;
 
     SetupRenderThread();
+    EnableRenderThread();
 }
 
 void SoftRenderer::SetRenderSettings(GPU::RenderSettings& settings)
@@ -114,6 +120,7 @@ void SoftRenderer::SetRenderSettings(GPU::RenderSettings& settings)
     ZoneScopedN(TracyFunction);
     Threaded = settings.Soft_Threaded;
     SetupRenderThread();
+    EnableRenderThread();
 }
 
 void SoftRenderer::TextureLookup(u32 texparam, u32 texpal, s16 s, s16 t, u16* color, u8* alpha)
@@ -1740,6 +1747,7 @@ void SoftRenderer::RenderFrame()
 void SoftRenderer::RestartFrame()
 {
     SetupRenderThread();
+    EnableRenderThread();
 }
 
 void SoftRenderer::RenderThreadFunc()

@@ -280,6 +280,19 @@ std::unique_ptr<GPU3D::Renderer3D> CurrentRenderer = {};
 
 bool AbortFrame;
 
+void Vertex::DoSavestate(Savestate* file) noexcept
+{
+    file->VarArray(Position, sizeof(Position));
+    file->VarArray(Color, sizeof(Color));
+    file->VarArray(TexCoords, sizeof(TexCoords));
+
+    file->Bool32(&Clipped);
+
+    file->VarArray(FinalPosition, sizeof(FinalPosition));
+    file->VarArray(FinalColor, sizeof(FinalColor));
+    file->VarArray(HiresPosition, sizeof(HiresPosition));
+}
+
 bool Init()
 {
     return true;
@@ -396,6 +409,12 @@ void DoSavestate(Savestate* file)
     ZoneScopedN(TracyFunction);
     file->Section("GP3D");
 
+    SoftRenderer* softRenderer = dynamic_cast<SoftRenderer*>(CurrentRenderer.get());
+    if (softRenderer && softRenderer->IsThreaded())
+    {
+        softRenderer->SetupRenderThread();
+    }
+
     CmdFIFO.DoSavestate(file);
     CmdPIPE.DoSavestate(file);
 
@@ -471,18 +490,9 @@ void DoSavestate(Savestate* file)
     file->Var32(&VertexNumInPoly);
     file->Var32(&NumConsecutivePolygons);
 
-    for (int i = 0; i < 4; i++)
+    for (Vertex& vtx : TempVertexBuffer)
     {
-        Vertex* vtx = &TempVertexBuffer[i];
-
-        file->VarArray(vtx->Position, sizeof(s32)*4);
-        file->VarArray(vtx->Color, sizeof(s32)*3);
-        file->VarArray(vtx->TexCoords, sizeof(s16)*2);
-
-        file->Bool32(&vtx->Clipped);
-
-        file->VarArray(vtx->FinalPosition, sizeof(s32)*2);
-        file->VarArray(vtx->FinalColor, sizeof(s32)*3);
+        vtx.DoSavestate(file);
     }
 
     if (file->Saving)
@@ -508,18 +518,9 @@ void DoSavestate(Savestate* file)
     file->Var32(&FlushRequest);
     file->Var32(&FlushAttributes);
 
-    for (int i = 0; i < 6144*2; i++)
+    for (Vertex& vtx : VertexRAM)
     {
-        Vertex* vtx = &VertexRAM[i];
-
-        file->VarArray(vtx->Position, sizeof(s32)*4);
-        file->VarArray(vtx->Color, sizeof(s32)*3);
-        file->VarArray(vtx->TexCoords, sizeof(s16)*2);
-
-        file->Bool32(&vtx->Clipped);
-
-        file->VarArray(vtx->FinalPosition, sizeof(s32)*2);
-        file->VarArray(vtx->FinalColor, sizeof(s32)*3);
+        vtx.DoSavestate(file);
     }
 
     for(int i = 0; i < 2048*2; i++)
@@ -633,6 +634,20 @@ void DoSavestate(Savestate* file)
     file->VarArray(ShininessTable, 128*sizeof(u8));
 
     file->Bool32(&AbortFrame);
+    file->Bool32(&GeometryEnabled);
+    file->Bool32(&RenderingEnabled);
+    file->Bool32(&RenderFrameIdentical);
+    file->VarArray(ClipMatrix, sizeof(ClipMatrix));
+    file->Bool32(&ClipMatrixDirty);
+    file->Var32(&PolygonMode);
+    file->Var32(&PolygonAttr);
+    file->Var32(&CurPolygonAttr);
+    file->Var32(&TexParam);
+    file->Var32(&TexPalette);
+    if (softRenderer && softRenderer->IsThreaded())
+    {
+        softRenderer->EnableRenderThread();
+    }
 }
 
 
