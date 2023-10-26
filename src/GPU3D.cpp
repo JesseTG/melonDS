@@ -276,6 +276,7 @@ u32 RenderNumPolygons;
 u32 FlushRequest;
 u32 FlushAttributes;
 
+Platform::Mutex* StateLock;
 std::unique_ptr<GPU3D::Renderer3D> CurrentRenderer = {};
 
 bool AbortFrame;
@@ -295,12 +296,22 @@ void Vertex::DoSavestate(Savestate* file) noexcept
 
 bool Init()
 {
+    if (StateLock)
+    {
+        Platform::Mutex_Free(StateLock);
+    }
+    StateLock = Platform::Mutex_Create();
     return true;
 }
 
 void DeInit()
 {
     CurrentRenderer = nullptr;
+    if (StateLock)
+    {
+        Platform::Mutex_Free(StateLock);
+        StateLock = nullptr;
+    }
 }
 
 void ResetRenderingState()
@@ -413,6 +424,7 @@ void DoSavestate(Savestate* file)
     if (softRenderer && softRenderer->IsThreaded())
     {
         softRenderer->SetupRenderThread();
+        Platform::Mutex_Lock(StateLock);
     }
 
     CmdFIFO.DoSavestate(file);
@@ -646,6 +658,7 @@ void DoSavestate(Savestate* file)
     file->Var32(&TexPalette);
     if (softRenderer && softRenderer->IsThreaded())
     {
+        Platform::Mutex_Unlock(StateLock);
         softRenderer->EnableRenderThread();
     }
 }
