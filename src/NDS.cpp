@@ -1088,7 +1088,6 @@ u32 RunFrame()
         ARM9->CheckGdbIncoming();
         ARM7->CheckGdbIncoming();
 
-        Platform::Mutex_Lock(GPU3D::StateLock);
         GPU::StartFrame();
 
         while (Running && GPU::TotalScanlines==0)
@@ -1163,8 +1162,6 @@ u32 RunFrame()
                 break;
             }
         }
-
-        Platform::Mutex_Unlock(GPU3D::StateLock);
 
 #ifdef DEBUG_CHECK_DESYNC
         Log(LogLevel::Debug, "[%08X%08X] ARM9=%ld, ARM7=%ld, GPU=%ld\n",
