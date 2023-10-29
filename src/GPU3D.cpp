@@ -412,7 +412,7 @@ void DoSavestate(Savestate* file)
     SoftRenderer* softRenderer = dynamic_cast<SoftRenderer*>(CurrentRenderer.get());
     if (softRenderer && softRenderer->IsThreaded())
     {
-        softRenderer->SetupRenderThread();
+        Platform::Mutex_Lock(softRenderer->StateBusy);
     }
 
     CmdFIFO.DoSavestate(file);
@@ -646,7 +646,7 @@ void DoSavestate(Savestate* file)
     file->Var32(&TexPalette);
     if (softRenderer && softRenderer->IsThreaded())
     {
-        softRenderer->EnableRenderThread();
+        Platform::Mutex_Unlock(softRenderer->StateBusy);
     }
 }
 

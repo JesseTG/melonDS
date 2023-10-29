@@ -106,6 +106,7 @@ SoftRenderer::SoftRenderer() noexcept
     Sema_RenderStart = Platform::Semaphore_Create();
     Sema_RenderDone = Platform::Semaphore_Create();
     Sema_ScanlineCount = Platform::Semaphore_Create();
+    StateBusy = Platform::Mutex_Create();
 
     Threaded = false;
     RenderThreadRunning = false;
@@ -120,6 +121,7 @@ SoftRenderer::~SoftRenderer()
     Platform::Semaphore_Free(Sema_RenderStart);
     Platform::Semaphore_Free(Sema_RenderDone);
     Platform::Semaphore_Free(Sema_ScanlineCount);
+    Platform::Mutex_Free(StateBusy);
 }
 
 void SoftRenderer::Reset()
@@ -1785,6 +1787,7 @@ void SoftRenderer::RenderThreadFunc()
         Platform::Semaphore_Wait(Sema_RenderStart);
         if (!RenderThreadRunning) return; // "Oh, we're done? Bye."
 
+        Platform::Mutex_Lock(StateBusy);
         RenderThreadRendering = true; // "I'm working, don't touch anything!"
         if (FrameIdentical)
         { // "No changes this frame? Okay, I'll just mark all the scanlines as done."
@@ -1801,6 +1804,7 @@ void SoftRenderer::RenderThreadFunc()
 
         // "Main thread, you can come in and do your thing now."
         RenderThreadRendering = false;
+        Platform::Mutex_Unlock(StateBusy);
     }
 }
 
