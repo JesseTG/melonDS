@@ -144,6 +144,8 @@ GPU3D::GPU3D(melonDS::NDS& nds, std::unique_ptr<Renderer3D>&& renderer) noexcept
     NDS(nds),
     CurrentRenderer(renderer ? std::move(renderer) : std::make_unique<SoftRenderer>())
 {
+    assert(CurrentRenderer != nullptr);
+    assert(renderer == nullptr);
 }
 
 void GPU3D::ResetRenderingState() noexcept
@@ -2520,6 +2522,26 @@ u32* GPU3D::GetLine(int line) noexcept
 
     return ScrolledLine;
 }
+
+[[nodiscard]] Renderer3D& GPU3D::GetCurrentRenderer() noexcept
+{
+    assert(CurrentRenderer != nullptr);
+    return *CurrentRenderer;
+}
+
+[[nodiscard]] const Renderer3D& GPU3D::GetCurrentRenderer() const noexcept
+{
+    assert(CurrentRenderer != nullptr);
+    return *CurrentRenderer;
+}
+
+void GPU3D::SetCurrentRenderer(std::unique_ptr<Renderer3D>&& renderer) noexcept
+{
+    assert(renderer != nullptr);
+    CurrentRenderer = std::move(renderer);
+    assert(renderer == nullptr);
+}
+
 
 bool GPU3D::IsRendererAccelerated() const noexcept
 {
