@@ -522,7 +522,7 @@ private:
     template <bool EnableJIT>
     u32 RunFrame();
 public:
-    NDS(NDSArgs&& args) noexcept : NDS(std::move(args), 0) {}
+    explicit NDS(NDSArgs&& args) noexcept : NDS(std::move(args), 0) {}
     NDS() noexcept;
     virtual ~NDS() noexcept;
     NDS(const NDS&) = delete;

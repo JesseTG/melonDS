@@ -56,6 +56,10 @@ class GPU
 {
 public:
     explicit GPU(melonDS::NDS& nds, std::unique_ptr<Renderer3D>&& renderer3d = nullptr, std::unique_ptr<GPU2D::Renderer2D>&& renderer2d = nullptr) noexcept;
+    GPU(const GPU&) = delete;
+    GPU(GPU&&) = delete;
+    GPU& operator=(const GPU&) = delete;
+    GPU& operator=(GPU&&) = delete;
     ~GPU() noexcept;
     void Reset() noexcept;
     void Stop() noexcept;

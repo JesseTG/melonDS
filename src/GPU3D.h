@@ -86,8 +86,12 @@ class NDS;
 class GPU3D
 {
 public:
-    GPU3D(melonDS::NDS& nds, std::unique_ptr<Renderer3D>&& renderer = nullptr) noexcept;
+    explicit GPU3D(melonDS::NDS& nds, std::unique_ptr<Renderer3D>&& renderer = nullptr) noexcept;
     ~GPU3D() noexcept = default;
+    GPU3D(const GPU3D&) = delete;
+    GPU3D& operator=(const GPU3D&) = delete;
+    GPU3D(GPU3D&&) = delete;
+    GPU3D& operator=(GPU3D&&) = delete;
     void Reset() noexcept;
 
     void DoSavestate(Savestate* file) noexcept;
