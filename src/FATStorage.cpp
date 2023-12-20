@@ -1014,13 +1014,10 @@ u64 FATStorage::GetDirectorySize(fs::path sourcedir) const
 bool FATStorage::Load(const std::string& filename, u64 size, const std::optional<string>& sourcedir)
 {
     bool hasdir = sourcedir && !sourcedir->empty();
-    if (sourcedir)
-    {
-        if (!fs::is_directory(fs::u8path(*sourcedir)))
-        {
-            hasdir = false;
-            SourceDir = std::nullopt;
-        }
+    if (sourcedir && !fs::is_directory(fs::u8path(*sourcedir)))
+    { // If we want to sync this card's contents to a host directory, but the directory doesn't exist...
+        hasdir = false;
+        SourceDir = std::nullopt;
     }
 
     // 'auto' size management: (size=0)
