@@ -97,8 +97,8 @@ private:
     bool ImportDirectory(const std::string& sourcedir);
     u64 GetDirectorySize(std::filesystem::path sourcedir) const;
 
-    bool Load(const std::string& filename, u64 size, const std::optional<std::string>& sourcedir);
-    bool Save();
+    [[deprecated("Move to the constructor")]] bool Load(const std::string& filename, u64 size, const std::optional<std::string>& sourcedir);
+    [[deprecated("Move to the destructor")]] bool Save();
 
     typedef struct
     {
