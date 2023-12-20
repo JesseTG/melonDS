@@ -1013,10 +1013,11 @@ u64 FATStorage::GetDirectorySize(fs::path sourcedir) const
 
 bool FATStorage::Load(const std::string& filename, u64 size, const std::optional<string>& sourcedir)
 {
-    bool hasdir = sourcedir && !sourcedir->empty();
-    if (sourcedir && !fs::is_directory(fs::u8path(*sourcedir)))
+    if (SourceDir && SourceDir->empty())
+        SourceDir = std::nullopt;
+
+    if (SourceDir && !fs::is_directory(fs::u8path(*SourceDir)))
     { // If we want to sync this card's contents to a host directory, but the directory doesn't exist...
-        hasdir = false;
         SourceDir = std::nullopt;
     }
 
@@ -1077,9 +1078,9 @@ bool FATStorage::Load(const std::string& filename, u64 size, const std::optional
         FileSize = size;
         if (FileSize == 0)
         {
-            if (hasdir)
+            if (SourceDir)
             {
-                FileSize = GetDirectorySize(fs::u8path(*sourcedir));
+                FileSize = GetDirectorySize(fs::u8path(*SourceDir));
                 FileSize += 0x8000000ULL; // 128MB leeway
 
                 // make it a power of two
@@ -1127,8 +1128,8 @@ bool FATStorage::Load(const std::string& filename, u64 size, const std::optional
 
     if (res == FR_OK)
     {
-        if (hasdir)
-            ImportDirectory(*sourcedir);
+        if (SourceDir)
+            ImportDirectory(*SourceDir);
     }
 
     f_unmount("0:");
