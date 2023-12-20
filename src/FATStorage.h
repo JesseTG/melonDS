@@ -74,10 +74,8 @@ private:
     Platform::FileHandle* File;
     u64 FileSize;
 
-    static Platform::FileHandle* FF_File;
-    static u64 FF_FileSize;
-    static UINT FF_ReadStorage(BYTE* buf, LBA_t sector, UINT num);
-    static UINT FF_WriteStorage(const BYTE* buf, LBA_t sector, UINT num);
+    ff_disk_read_cb FF_ReadStorage() const noexcept;
+    ff_disk_write_cb FF_WriteStorage() const noexcept;
 
     static u32 ReadSectorsInternal(Platform::FileHandle* file, u64 filelen, u32 start, u32 num, u8* data);
     static u32 WriteSectorsInternal(Platform::FileHandle* file, u64 filelen, u32 start, u32 num, const u8* data);
