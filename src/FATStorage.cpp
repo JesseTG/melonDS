@@ -55,7 +55,7 @@ FATStorage::FATStorage(FATStorageArgs&& args) noexcept :
 {
     Load(FilePath, FileSize, SourceDir);
 
-    File = nullptr;
+    File = Platform::OpenLocalFile(FilePath, FileMode::ReadWriteExisting);
 }
 
 FATStorage::FATStorage(FATStorage&& other) noexcept
