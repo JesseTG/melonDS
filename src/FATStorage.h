@@ -28,6 +28,7 @@
 #include "Platform.h"
 #include "types.h"
 #include "fatfs/ff.h"
+#include "FATIO.h"
 
 namespace melonDS
 {
