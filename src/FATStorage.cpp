@@ -47,22 +47,23 @@ FATStorage::FATStorage(FATStorageArgs&& args) noexcept :
     ReadOnly(args.ReadOnly),
     SourceDir(std::move(args.SourceDir))
 {
+    args.SourceDir = std::nullopt;
     Load(FilePath, FileSize, SourceDir);
 
     File = Platform::OpenLocalFile(FilePath, FileMode::ReadWriteExisting);
 }
 
-FATStorage::FATStorage(FATStorage&& other) noexcept
+FATStorage::FATStorage(FATStorage&& other) noexcept :
+    FilePath(std::move(other.FilePath)),
+    IndexPath(std::move(other.IndexPath)),
+    SourceDir(std::move(other.SourceDir)),
+    ReadOnly(other.ReadOnly),
+    File(other.File),
+    FileSize(other.FileSize),
+    DirIndex(std::move(other.DirIndex)),
+    FileIndex(std::move(other.FileIndex))
 {
-    FilePath = std::move(other.FilePath);
-    IndexPath = std::move(other.IndexPath);
-    SourceDir = std::move(other.SourceDir);
-    ReadOnly = other.ReadOnly;
-    File = other.File;
-    FileSize = other.FileSize;
-    DirIndex = std::move(other.DirIndex);
-    FileIndex = std::move(other.FileIndex);
-
+    other.SourceDir = std::nullopt;
     other.File = nullptr;
 }
 
