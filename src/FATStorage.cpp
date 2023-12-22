@@ -180,7 +180,10 @@ FATStorage& FATStorage::operator=(FATStorage&& other) noexcept
     if (this != &other)
     {
         if (File)
+        { // Sync this file's contents to the host (if applicable) before closing it
+            Save();
             CloseFile(File);
+        }
 
         FilePath = std::move(other.FilePath);
         IndexPath = std::move(other.IndexPath);
@@ -192,6 +195,7 @@ FATStorage& FATStorage::operator=(FATStorage&& other) noexcept
         FileIndex = std::move(other.FileIndex);
 
         other.File = nullptr;
+        other.SourceDir = std::nullopt;
     }
 
     return *this;
@@ -199,9 +203,12 @@ FATStorage& FATStorage::operator=(FATStorage&& other) noexcept
 
 FATStorage::~FATStorage()
 {
-    if (!ReadOnly) Save();
+    if (File)
+    { // Sync this file's contents to the host (if applicable) before closing it
+        Save();
+        CloseFile(File);
+    }
 
-    if (File) CloseFile(File);
     File = nullptr;
 }
 
@@ -1108,27 +1115,20 @@ u64 FATStorage::GetDirectorySize(fs::path sourcedir) const
     return ret;
 }
 
-bool FATStorage::Save()
+void FATStorage::Save()
 {
-    if (!File)
-    { // If we never managed to open the SD card image...
-        return false;
-    }
-    if (!SourceDir)
-    { // If we're not syncing the SD card image to a host directory...
-        return true; // Not an error.
+    if (!File || !SourceDir || ReadOnly)
+    { // If we never opened the SD card image, or we don't want to sync it, or it's read-only...
+        return;
     }
 
     ff_disk_open(FF_ReadStorage(), FF_WriteStorage(), (LBA_t)(FileSize>>9));
 
-    FRESULT res;
     FATFS fs;
-
-    res = f_mount(&fs, "0:", 1);
-    if (res != FR_OK)
+    if (f_mount(&fs, "0:", 1) != FR_OK)
     {
         ff_disk_close();
-        return false;
+        return;
     }
 
     ExportChanges(*SourceDir);
@@ -1138,8 +1138,6 @@ bool FATStorage::Save()
     f_unmount("0:");
 
     ff_disk_close();
-
-    return true;
 }
 
 }
