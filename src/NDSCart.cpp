@@ -1307,12 +1307,15 @@ void CartSD::ReadROM_B7(u32 addr, u32 len, u8* data, u32 offset) const
 }
 
 CartHomebrew::CartHomebrew(const u8* rom, u32 len, u32 chipid, ROMListEntry romparams, std::optional<FATStorage>&& sdcard) :
-    CartSD(rom, len, chipid, romparams, std::move(sdcard))
-{}
+    CartHomebrew(CopyToUnique(rom, len), len, chipid, romparams, std::move(sdcard))
+{
+}
 
 CartHomebrew::CartHomebrew(std::unique_ptr<u8[]>&& rom, u32 len, u32 chipid, ROMListEntry romparams, std::optional<FATStorage>&& sdcard) :
     CartSD(std::move(rom), len, chipid, romparams, std::move(sdcard))
-{}
+{
+    Reset();
+}
 
 CartHomebrew::~CartHomebrew() = default;
 
