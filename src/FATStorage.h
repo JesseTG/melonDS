@@ -41,8 +41,8 @@ struct FATStorageArgs
 {
     std::string Filename;
 
-    /// Size of the desired SD card in bytes, or 0 for auto-detect.
-    u64 Size;
+    /// Size of the desired SD card in bytes, or std::nullopt for auto-detect.
+    std::optional<u64> Size;
     bool ReadOnly;
     std::optional<std::string> SourceDir;
 };
@@ -50,7 +50,7 @@ struct FATStorageArgs
 class FATStorage
 {
 public:
-    FATStorage(const std::string& filename, u64 size, bool readonly, const std::optional<std::string>& sourcedir = std::nullopt);
+    FATStorage(const std::string& filename, std::optional<u64> size, bool readonly, const std::optional<std::string>& sourcedir = std::nullopt);
     explicit FATStorage(const FATStorageArgs& args) noexcept;
     explicit FATStorage(FATStorageArgs&& args) noexcept;
     FATStorage(FATStorage&& other) noexcept;
@@ -74,8 +74,8 @@ private:
     std::optional<std::string> SourceDir;
     bool ReadOnly;
 
-    Platform::FileHandle* File;
-    u64 FileSize;
+    Platform::FileHandle* File = nullptr;
+    u64 FileSize = 0;
 
     ff_disk_read_cb FF_ReadStorage() const noexcept;
     ff_disk_write_cb FF_WriteStorage() const noexcept;
@@ -98,7 +98,6 @@ private:
     bool ImportDirectory(const std::string& sourcedir);
     u64 GetDirectorySize(std::filesystem::path sourcedir) const;
 
-    [[deprecated("Move to the constructor")]] bool Load(const std::string& filename, u64 size, const std::optional<std::string>& sourcedir);
     [[deprecated("Move to the destructor")]] bool Save();
 
     typedef struct

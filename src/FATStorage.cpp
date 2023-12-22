@@ -31,7 +31,7 @@ namespace fs = std::filesystem;
 using namespace Platform;
 using std::string;
 
-FATStorage::FATStorage(const std::string& filename, u64 size, bool readonly, const std::optional<string>& sourcedir) :
+FATStorage::FATStorage(const std::string& filename, std::optional<u64> size, bool readonly, const std::optional<string>& sourcedir) :
     FATStorage(FATStorageArgs {filename, size, readonly, sourcedir})
 {
 }
@@ -44,14 +44,121 @@ FATStorage::FATStorage(const FATStorageArgs& args) noexcept :
 FATStorage::FATStorage(FATStorageArgs&& args) noexcept :
     FilePath(std::move(args.Filename)),
     IndexPath(FilePath + ".idx"), // Okay because FilePath is initialized first (because it's declared first)
-    FileSize(args.Size),
     ReadOnly(args.ReadOnly),
     SourceDir(std::move(args.SourceDir))
 {
-    args.SourceDir = std::nullopt;
-    Load(FilePath, FileSize, SourceDir);
+    args.SourceDir = std::nullopt; // moving from an optional doesn't set it to nullopt
 
-    File = Platform::OpenLocalFile(FilePath, FileMode::ReadWriteExisting);
+    if (SourceDir && (SourceDir->empty() || !fs::is_directory(fs::u8path(*SourceDir))))
+    { // If we want to sync this card's contents to a host directory, but the directory doesn't exist...
+        SourceDir = std::nullopt;
+    }
+
+    // 'auto' size management: (size=0)
+    // * if an index exists: the size from the index is used
+    // * if no index, and an image file exists: the file size is used
+    // * if no image: if sourcing from a directory, size is calculated from that
+    //   with a minimum 128MB extra, otherwise size is defaulted to 512MB
+
+    bool isnew = !LocalFileExists(FilePath);
+    File = OpenLocalFile(FilePath, static_cast<FileMode>(ReadWrite | Preserve));
+    if (!File)
+        return;
+
+    if (isnew)
+    { // If we're creating a new SD card image...
+        SaveIndex(); // Write out a blank index that represents the configured size of the SD card image.
+    }
+    else
+    {
+        LoadIndex();
+
+        if (!FileSize)
+        { // If we couldn't get the existing card's size from the index...
+            FileSize = FileLength(File); // ...then get it from the file itself.
+        }
+    }
+
+    bool needformat = false;
+    FATFS fs;
+    FRESULT res = FR_OK;
+    if (FileSize == 0)
+    { // If the loaded image file is empty or newly-created...
+        needformat = true;
+    }
+    else
+    {
+        ff_disk_open(FF_ReadStorage(), FF_WriteStorage(), (LBA_t) (FileSize >> 9));
+        res = f_mount(&fs, "0:", 1);
+        if (res != FR_OK)
+        { // Try to mount the FAT volume. If that fails...
+            needformat = true;
+        }
+        else if (args.Size && *args.Size != FileSize)
+        { // Else if we want an SD card of a particular size, but it doesn't match the existing SD card image's size...
+            needformat = true;
+        }
+    }
+
+    if (needformat)
+    { // If we're reformatting the SD card image...
+        if (!args.Size || FileSize == 0)
+        { // If we're auto-sizing the SD card image...
+            if (SourceDir)
+            { // If we want to sync this card's contents to a host directory...
+                // ...then calculate the size of the SD card image from the host directory's contents.
+                FileSize = GetDirectorySize(std::filesystem::u8path(*SourceDir));
+                FileSize += 0x8000000ULL; // 128MB leeway
+
+                // make it a power of two
+                FileSize |= (FileSize >> 1);
+                FileSize |= (FileSize >> 2);
+                FileSize |= (FileSize >> 4);
+                FileSize |= (FileSize >> 8);
+                FileSize |= (FileSize >> 16);
+                FileSize |= (FileSize >> 32);
+                FileSize++;
+            }
+            else
+                FileSize = 0x20000000ULL; // Otherwise default to a 512MB card
+        }
+
+        ff_disk_close();
+        ff_disk_open(FF_ReadStorage(), FF_WriteStorage(), (LBA_t) (FileSize >> 9));
+
+        DirIndex.clear();
+        FileIndex.clear();
+        SaveIndex(); // Write out an empty index
+
+        FF_MKFS_PARM fsopt;
+
+        // FAT type: we force it to FAT32 for any volume that is 1GB or more
+        // libfat attempts to determine the FAT type from the volume size and other parameters
+        // which can lead to it trying to interpret a FAT16 volume as FAT32
+        if (FileSize >= 0x40000000ULL)
+            fsopt.fmt = FM_FAT32;
+        else
+            fsopt.fmt = FM_FAT;
+
+        fsopt.au_size = 0;
+        fsopt.align = 1;
+        fsopt.n_fat = 1;
+        fsopt.n_root = 512;
+
+        // Initialize an empty filesystem.
+        BYTE workbuf[FF_MAX_SS];
+        res = f_mkfs("0:", &fsopt, workbuf, sizeof(workbuf));
+
+        if (res == FR_OK)
+            // If that succeeded, mount it.
+            res = f_mount(&fs, "0:", 1);
+    }
+    if (res == FR_OK && SourceDir)
+    { // If the SD card image is mounted and we want to sync its contents to a host directory...
+        ImportDirectory(*SourceDir);
+    }
+    f_unmount("0:");
+    ff_disk_close();
 }
 
 FATStorage::FATStorage(FATStorage&& other) noexcept :
@@ -999,130 +1106,6 @@ u64 FATStorage::GetDirectorySize(fs::path sourcedir) const
     }
 
     return ret;
-}
-
-bool FATStorage::Load(const std::string& filename, u64 size, const std::optional<string>& sourcedir)
-{
-    if (SourceDir && SourceDir->empty())
-        SourceDir = std::nullopt;
-
-    if (SourceDir && !fs::is_directory(fs::u8path(*SourceDir)))
-    { // If we want to sync this card's contents to a host directory, but the directory doesn't exist...
-        SourceDir = std::nullopt;
-    }
-
-    // 'auto' size management: (size=0)
-    // * if an index exists: the size from the index is used
-    // * if no index, and an image file exists: the file size is used
-    // * if no image: if sourcing from a directory, size is calculated from that
-    //   with a minimum 128MB extra, otherwise size is defaulted to 512MB
-
-    bool isnew = !Platform::LocalFileExists(filename);
-    File = Platform::OpenLocalFile(filename, static_cast<FileMode>(FileMode::ReadWrite | FileMode::Preserve));
-    if (!File)
-        return false;
-
-    if (isnew)
-    { // If we're creating a new SD card image...
-        SaveIndex();
-        // Write out a blank index that represents the configured size of the SD card image.
-    }
-    else
-    {
-        LoadIndex();
-
-        if (FileSize == 0)
-        { // If we're using the existing SD card image's size...
-            FileSize = FileLength(File);
-        }
-    }
-
-    bool needformat = false;
-    FATFS fs;
-    FRESULT res;
-
-    if (FileSize == 0)
-    {
-        needformat = true;
-    }
-    else
-    {
-        ff_disk_open(FF_ReadStorage(), FF_WriteStorage(), (LBA_t)(FileSize>>9));
-
-        res = f_mount(&fs, "0:", 1);
-        if (res != FR_OK)
-        {
-            needformat = true;
-        }
-        else if (size > 0 && size != FileSize)
-        {
-            needformat = true;
-        }
-    }
-
-    if (needformat)
-    {
-        FileSize = size;
-        if (FileSize == 0)
-        {
-            if (SourceDir)
-            {
-                FileSize = GetDirectorySize(fs::u8path(*SourceDir));
-                FileSize += 0x8000000ULL; // 128MB leeway
-
-                // make it a power of two
-                FileSize |= (FileSize >> 1);
-                FileSize |= (FileSize >> 2);
-                FileSize |= (FileSize >> 4);
-                FileSize |= (FileSize >> 8);
-                FileSize |= (FileSize >> 16);
-                FileSize |= (FileSize >> 32);
-                FileSize++;
-            }
-            else
-                FileSize = 0x20000000ULL; // 512MB
-        }
-
-        ff_disk_close();
-        ff_disk_open(FF_ReadStorage(), FF_WriteStorage(), (LBA_t)(FileSize>>9));
-
-        DirIndex.clear();
-        FileIndex.clear();
-        SaveIndex();
-
-        FF_MKFS_PARM fsopt;
-
-        // FAT type: we force it to FAT32 for any volume that is 1GB or more
-        // libfat attempts to determine the FAT type from the volume size and other parameters
-        // which can lead to it trying to interpret a FAT16 volume as FAT32
-        if (FileSize >= 0x40000000ULL)
-            fsopt.fmt = FM_FAT32;
-        else
-            fsopt.fmt = FM_FAT;
-
-        fsopt.au_size = 0;
-        fsopt.align = 1;
-        fsopt.n_fat = 1;
-        fsopt.n_root = 512;
-
-        BYTE workbuf[FF_MAX_SS];
-        res = f_mkfs("0:", &fsopt, workbuf, sizeof(workbuf));
-
-        if (res == FR_OK)
-            res = f_mount(&fs, "0:", 1);
-    }
-
-    if (res == FR_OK)
-    {
-        if (SourceDir)
-            ImportDirectory(*SourceDir);
-    }
-
-    f_unmount("0:");
-
-    ff_disk_close();
-
-    return true;
 }
 
 bool FATStorage::Save()
