@@ -295,7 +295,7 @@ std::unique_ptr<NDS> EmuThread::CreateConsole(
 bool EmuThread::UpdateConsole(UpdateConsoleNDSArgs&& ndsargs, UpdateConsoleGBAArgs&& gbaargs) noexcept
 {
     // Let's get the cart we want to use;
-    // if we wnat to keep the cart, we'll eject it from the existing console first.
+    // if we want to keep the cart, we'll eject it from the existing console first.
     std::unique_ptr<NDSCart::CartCommon> nextndscart;
     if (std::holds_alternative<Keep>(ndsargs))
     { // If we want to keep the existing cart (if any)...
