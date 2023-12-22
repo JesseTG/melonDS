@@ -43,6 +43,7 @@ FATStorage::FATStorage(const FATStorageArgs& args) noexcept :
 
 FATStorage::FATStorage(FATStorageArgs&& args) noexcept :
     FilePath(std::move(args.Filename)),
+    IndexPath(FilePath + ".idx"), // Okay because FilePath is initialized first (because it's declared first)
     FileSize(args.Size),
     ReadOnly(args.ReadOnly),
     SourceDir(std::move(args.SourceDir))
@@ -1021,7 +1022,6 @@ bool FATStorage::Load(const std::string& filename, u64 size, const std::optional
     if (!File)
         return false;
 
-    IndexPath = FilePath + ".idx";
     if (isnew)
     { // If we're creating a new SD card image...
         DirIndex.clear();
