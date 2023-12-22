@@ -1117,8 +1117,8 @@ u64 FATStorage::GetDirectorySize(fs::path sourcedir) const
 
 void FATStorage::Save()
 {
-    if (!File || !SourceDir || ReadOnly)
-    { // If we never opened the SD card image, or we don't want to sync it, or it's read-only...
+    if (!File || ReadOnly)
+    { // If we never opened the SD card image, or it's read-only...
         return;
     }
 
@@ -1131,7 +1131,9 @@ void FATStorage::Save()
         return;
     }
 
-    ExportChanges(*SourceDir);
+    if (SourceDir)
+        // If we want to sync the card image to the host...
+        ExportChanges(*SourceDir);
 
     SaveIndex();
 
