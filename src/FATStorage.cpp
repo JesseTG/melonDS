@@ -1024,8 +1024,6 @@ bool FATStorage::Load(const std::string& filename, u64 size, const std::optional
 
     if (isnew)
     { // If we're creating a new SD card image...
-        DirIndex.clear();
-        FileIndex.clear();
         SaveIndex();
         // Write out a blank index that represents the configured size of the SD card image.
     }
