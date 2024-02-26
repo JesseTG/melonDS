@@ -167,6 +167,12 @@ void GPU3D::SetCurrentRenderer(std::unique_ptr<Renderer3D>&& renderer) noexcept
 
 void GPU3D::ResetRenderingState() noexcept
 {
+    SoftRenderer* softRenderer = dynamic_cast<SoftRenderer*>(CurrentRenderer.get());
+    if (softRenderer && softRenderer->IsThreaded())
+    {
+        softRenderer->SetupRenderThread(NDS.GPU);
+    }
+
     RenderNumPolygons = 0;
 
     RenderDispCnt = 0;
@@ -182,6 +188,11 @@ void GPU3D::ResetRenderingState() noexcept
 
     RenderClearAttr1 = 0x3F000000;
     RenderClearAttr2 = 0x00007FFF;
+
+    if (softRenderer && softRenderer->IsThreaded())
+    {
+        softRenderer->EnableRenderThread();
+    }
 }
 
 void GPU3D::Reset() noexcept
